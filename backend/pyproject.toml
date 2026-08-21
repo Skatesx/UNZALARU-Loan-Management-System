@@ -1,0 +1,20 @@
+[project]
+name = "unzalaru-backend"
+version = "0.1.0"
+description = "UNZALARU Loan Management System Backend"
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.0",
+    "djangorestframework>=3.15",
+    "djangorestframework-simplejwt>=5.3",
+    "drf-spectacular>=0.27",
+    "django-cors-headers>=4.3",
+    "django-filter>=24.1",
+    "psycopg[binary]>=3.1",
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "pytest-cov>=5.0",
+    "reportlab>=4.1",
+    "faker>=26.0",
+    "python-decouple>=3.8",
+]
