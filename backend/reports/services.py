@@ -1,5 +1,5 @@
 import csv
-from io import StringIO
+from io import BytesIO, StringIO
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
@@ -39,7 +39,7 @@ class ReportExportService:
         data: list of dicts
         columns: list of (field_name, header_label) tuples
         """
-        output = StringIO()
+        output = BytesIO()
         doc = SimpleDocTemplate(output, pagesize=landscape(letter))
         elements = []
         styles = getSampleStyleSheet()

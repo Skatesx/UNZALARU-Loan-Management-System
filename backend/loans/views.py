@@ -23,6 +23,9 @@ from .services import LoanApplicationService
 class LoanTypeViewSet(viewsets.ModelViewSet):
     """Loan type management endpoints."""
 
+    queryset = LoanType.objects.all()
+    serializer_class = LoanTypeSerializer
+
     def get_permissions(self):
         # Members need read access to pick a loan type when applying.
         if self.action in ['list', 'retrieve']:
