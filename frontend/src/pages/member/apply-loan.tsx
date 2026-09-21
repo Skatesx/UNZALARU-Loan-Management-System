@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useLoanTypes, useCreateLoanApplication } from '@/hooks/use-loans'
 import { loanApplicationSchema, type LoanApplicationFormData } from '@/lib/validators'
+import { PendingFeatureGate } from '@/components/shared/pending-member-banner'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -64,7 +65,8 @@ export function ApplyLoan() {
   const types = Array.isArray(loanTypes) ? loanTypes : []
 
   return (
-    <div>
+    <PendingFeatureGate feature="Loan applications">
+      <div>
       <PageHeader title="Apply for Loan" description="Complete the loan application form" />
 
       {/* Step indicator */}
@@ -72,11 +74,11 @@ export function ApplyLoan() {
         {[1, 2, 3].map((s) => (
           <div key={s} className="flex items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step >= s ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-500'
+              step >= s ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
             }`}>
               {step > s ? <CheckCircle className="w-4 h-4" /> : s}
             </div>
-            {s < 3 && <div className={`w-16 h-0.5 ${step > s ? 'bg-emerald-600' : 'bg-gray-200'}`} />}
+            {s < 3 && <div className={`w-16 h-0.5 ${step > s ? 'bg-emerald-600' : 'bg-muted'}`} />}
           </div>
         ))}
       </div>
@@ -93,24 +95,24 @@ export function ApplyLoan() {
                   className={`cursor-pointer transition-all ${
                     selectedTypeId === lt.id
                       ? 'ring-2 ring-emerald-500 border-emerald-500'
-                      : 'hover:border-gray-300'
+                      : 'hover:border-input'
                   }`}
                   onClick={() => setSelectedTypeId(lt.id)}
                 >
                   <CardContent className="p-5">
                     <h3 className="font-semibold">{lt.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{lt.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{lt.description}</p>
                     <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
                       <div>
-                        <p className="text-xs text-gray-400">Amount</p>
+                        <p className="text-xs text-muted-foreground/70">Amount</p>
                         <p className="font-medium">K{Number(lt.min_amount).toLocaleString()} — K{Number(lt.max_amount).toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Interest</p>
+                        <p className="text-xs text-muted-foreground/70">Interest</p>
                         <p className="font-medium">{lt.interest_rate}% ({lt.interest_method})</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-400">Duration</p>
+                        <p className="text-xs text-muted-foreground/70">Duration</p>
                         <p className="font-medium">{lt.min_duration_months}—{lt.max_duration_months} months</p>
                       </div>
                     </div>
@@ -129,9 +131,9 @@ export function ApplyLoan() {
             <div className="space-y-2">
               <Label>Requested Amount (K)</Label>
               <Input type="number" step="0.01" {...register('requested_amount')} />
-              {errors.requested_amount && <p className="text-sm text-red-500">{errors.requested_amount.message}</p>}
+              {errors.requested_amount && <p className="text-sm text-destructive">{errors.requested_amount.message}</p>}
               {selectedType && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-muted-foreground/70">
                   Range: K{Number(selectedType.min_amount).toLocaleString()} — K{Number(selectedType.max_amount).toLocaleString()}
                 </p>
               )}
@@ -139,12 +141,12 @@ export function ApplyLoan() {
             <div className="space-y-2">
               <Label>Duration (months)</Label>
               <Input type="number" {...register('duration_months')} />
-              {errors.duration_months && <p className="text-sm text-red-500">{errors.duration_months.message}</p>}
+              {errors.duration_months && <p className="text-sm text-destructive">{errors.duration_months.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>Purpose</Label>
               <Textarea {...register('purpose')} placeholder="Describe the purpose of this loan..." rows={4} />
-              {errors.purpose && <p className="text-sm text-red-500">{errors.purpose.message}</p>}
+              {errors.purpose && <p className="text-sm text-destructive">{errors.purpose.message}</p>}
             </div>
 
             {/* Preview */}
@@ -154,11 +156,11 @@ export function ApplyLoan() {
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Estimated Repayment</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <p className="text-xs text-gray-500">Monthly Installment</p>
+                      <p className="text-xs text-muted-foreground">Monthly Installment</p>
                       <p className="font-bold">{formatCurrency(estimatedMonthly)}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500">Total Repayment</p>
+                      <p className="text-xs text-muted-foreground">Total Repayment</p>
                       <p className="font-bold">{formatCurrency(estimatedMonthly * duration)}</p>
                     </div>
                   </div>
@@ -175,23 +177,23 @@ export function ApplyLoan() {
             <Card>
               <CardContent className="p-5 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Loan Type</span>
+                  <span className="text-muted-foreground">Loan Type</span>
                   <span className="font-medium">{selectedType?.name}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Amount</span>
+                  <span className="text-muted-foreground">Amount</span>
                   <span className="font-medium">{formatCurrency(amount || 0)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Duration</span>
+                  <span className="text-muted-foreground">Duration</span>
                   <span className="font-medium">{duration} months</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Est. Monthly</span>
-                  <span className="font-bold text-emerald-600">{formatCurrency(estimatedMonthly)}</span>
+                  <span className="text-muted-foreground">Est. Monthly</span>
+                  <span className="font-bold text-primary">{formatCurrency(estimatedMonthly)}</span>
                 </div>
                 <div className="border-t pt-3">
-                  <p className="text-xs text-gray-500 mb-1">Purpose</p>
+                  <p className="text-xs text-muted-foreground mb-1">Purpose</p>
                   <p className="text-sm">{watch('purpose')}</p>
                 </div>
               </CardContent>
@@ -230,6 +232,7 @@ export function ApplyLoan() {
           )}
         </div>
       </form>
-    </div>
+      </div>
+    </PendingFeatureGate>
   )
 }

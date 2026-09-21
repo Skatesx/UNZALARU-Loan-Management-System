@@ -1,9 +1,15 @@
 import type { LoginRequest, LoginResponse, PasswordChangeRequest } from '@/types/auth'
+import type { MemberSignupRequest, MemberSignupResponse } from '@/types/member'
 import apiClient from './client'
 
 export const authApi = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
     const response = await apiClient.post('/auth/login/', data)
+    return response.data
+  },
+
+  signup: async (data: MemberSignupRequest): Promise<MemberSignupResponse> => {
+    const response = await apiClient.post('/members/signup/', data)
     return response.data
   },
 

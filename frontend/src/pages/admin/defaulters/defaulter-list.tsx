@@ -75,7 +75,7 @@ export function DefaulterList() {
         </Card>
         <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
           <CardContent className="p-4 flex items-center gap-3">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+            <AlertCircle className="w-8 h-8 text-destructive" />
             <div>
               <p className="text-2xl font-bold">{counts.DEFAULTER}</p>
               <p className="text-sm text-red-600">Defaulters</p>
@@ -114,32 +114,32 @@ export function DefaulterList() {
       {defaulters.length === 0 ? (
         <EmptyState title="No defaulters found" description="No members with overdue payments." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Member ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Days Overdue</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Classification</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Last Checked</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Days Overdue</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Classification</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Last Checked</th>
                 </tr>
               </thead>
               <tbody>
                 {defaulters.map((d) => (
-                  <tr key={d.id} className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={d.id} className="border-b last:border-b-0 hover:bg-muted/50 ">
                     <td className="px-4 py-3 font-medium">{d.member_name}</td>
                     <td className="px-4 py-3">{d.member_id}</td>
                     <td className="px-4 py-3">
-                      <span className="text-emerald-600 font-medium">{d.loan_id}</span>
+                      <span className="text-primary font-medium">{d.loan_id}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-bold text-red-600">{d.days_overdue}</span>
                     </td>
                     <td className="px-4 py-3"><StatusBadge status={d.classification} /></td>
-                    <td className="px-4 py-3 text-gray-500">{formatRelativeTime(d.last_checked)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatRelativeTime(d.last_checked)}</td>
                   </tr>
                 ))}
               </tbody>

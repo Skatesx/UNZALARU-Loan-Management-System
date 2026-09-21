@@ -19,10 +19,10 @@ export function MemberDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <h1 className="text-2xl font-bold text-foreground">
           Welcome, {user?.first_name}!
         </h1>
-        <p className="text-sm text-gray-500">Here's an overview of your account</p>
+        <p className="text-sm text-muted-foreground">Here's an overview of your account</p>
       </div>
 
       {/* Summary Cards */}
@@ -56,11 +56,11 @@ export function MemberDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-                <HandCoins className="w-6 h-6 text-emerald-600" />
+                <HandCoins className="w-6 h-6 text-primary" />
               </div>
               <div>
                 <p className="font-medium">Apply for Loan</p>
-                <p className="text-xs text-gray-500">Submit a new loan application</p>
+                <p className="text-xs text-muted-foreground">Submit a new loan application</p>
               </div>
             </CardContent>
           </Card>
@@ -73,7 +73,7 @@ export function MemberDashboard() {
               </div>
               <div>
                 <p className="font-medium">View My Loans</p>
-                <p className="text-xs text-gray-500">Check your active loans</p>
+                <p className="text-xs text-muted-foreground">Check your active loans</p>
               </div>
             </CardContent>
           </Card>
@@ -86,7 +86,7 @@ export function MemberDashboard() {
               </div>
               <div>
                 <p className="font-medium">Repayment History</p>
-                <p className="text-xs text-gray-500">View your payment history</p>
+                <p className="text-xs text-muted-foreground">View your payment history</p>
               </div>
             </CardContent>
           </Card>
@@ -100,19 +100,19 @@ export function MemberDashboard() {
             <h3 className="font-medium mb-4">Current Active Loan</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-gray-500">Loan ID</p>
-                <p className="font-medium text-emerald-600">{data.current_loan.loan_id}</p>
+                <p className="text-xs text-muted-foreground">Loan ID</p>
+                <p className="font-medium text-primary">{data.current_loan.loan_id}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Principal</p>
+                <p className="text-xs text-muted-foreground">Principal</p>
                 <p className="font-medium">{formatCurrency(data.current_loan.principal)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Monthly Installment</p>
+                <p className="text-xs text-muted-foreground">Monthly Installment</p>
                 <p className="font-medium">{formatCurrency(data.current_loan.monthly_installment)}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500">Outstanding</p>
+                <p className="text-xs text-muted-foreground">Outstanding</p>
                 <p className="font-medium text-amber-600">{formatCurrency(data.current_loan.outstanding_balance)}</p>
               </div>
             </div>

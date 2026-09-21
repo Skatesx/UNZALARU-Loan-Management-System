@@ -5,12 +5,16 @@ from decimal import Decimal
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from config_app.models import SystemConfig
 from eligibility.models import EligibilityRule, EligibilityScore
+from loans.criteria import CRITERIA_KEY, DEFAULT_CRITERIA
 from loans.models import Loan, LoanApplication, LoanType
 from members.models import Member
 from notifications.models import Notification
 from repayments.models import Repayment, RepaymentSchedule
 from users.models import User
+
+PAYMENT_MODES = ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE', 'SALARY_DEDUCTION']
 
 
 class Command(BaseCommand):
@@ -18,6 +22,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
+        # Deterministic seed so demo logins (first.lastN@unzalaru.com) are
+        # reproducible across runs — see README seed logins.
+        random.seed(42)
 
         # Create admin user
         admin_user, created = User.objects.get_or_create(
@@ -149,6 +156,19 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'Created eligibility rule: {rule.name}')
 
+        # Default system configuration (loan approval criteria)
+        SystemConfig.objects.get_or_create(
+            key=CRITERIA_KEY,
+            defaults={
+                'value': DEFAULT_CRITERIA,
+                'description': (
+                    'Loan approval criteria evaluated before an admin can '
+                    'approve an application. Admins may override with a reason.'
+                ),
+            }
+        )
+        self.stdout.write('Configured default loan approval criteria')
+
         # Create member users
         departments = [
             'Computer Science', 'Mathematics', 'Physics', 'Chemistry',
@@ -156,26 +176,43 @@ class Command(BaseCommand):
             'Law', 'Medicine', 'Education', 'Arts',
         ]
         employment_statuses = ['PERMANENT', 'CONTRACT', 'PART_TIME']
-        first_names = [
-            'John', 'Mary', 'Peter', 'Grace', 'David', 'Sarah', 'James',
-            'Ruth', 'Michael', 'Hannah', 'Joseph', 'Elizabeth', 'Daniel',
-            'Martha', 'Samuel', 'Naomi', 'Stephen', 'Lydia', 'Andrew',
-            'Esther', 'Patrick', 'Priscilla', 'Thomas', 'Rebecca', 'Paul',
-            'Deborah', 'Mark', 'Rachel', 'Luke', 'Joanna', 'Timothy',
-            'Abigail', 'Philip', 'Hannah', 'Nathaniel', 'Ruth', 'Benjamin',
-            'Deborah', 'Isaac', 'Rachel', 'Simon', 'Sarah', 'Jacob', 'Naomi',
-        ]
-        last_names = [
-            'Moyo', 'Banda', 'Phiri', 'Mulenga', 'Chanda', 'Tembo',
-            'Nyongesa', 'Kapenda', 'Sakala', 'Mwamba', 'Lungu', 'Mubita',
-            'Kunda', 'Shimwili', 'Nkonde', 'Chilufya', 'Mwaamba', 'Bwalya',
-            'Mwila', 'Katongo', 'Sichilima', 'Mumbi', 'Kasongo', 'Nsokimieno',
-        ]
 
         members = []
-        for i in range(30):
-            first = random.choice(first_names)
-            last = random.choice(last_names)
+        # Deterministic (first, last) pairs so demo emails are predictable and
+        # match the logins documented in the README (john.mwansa1@unzalaru.com).
+        member_names = [
+            ('Mary', 'Phiri'),      # mary.phiri0@unzalaru.com
+            ('John', 'Mwansa'),     # john.mwansa1@unzalaru.com
+            ('Grace', 'Banda'),
+            ('David', 'Mulenga'),
+            ('Sarah', 'Tembo'),
+            ('James', 'Chanda'),
+            ('Ruth', 'Phiri'),
+            ('Michael', 'Mwansa'),
+            ('Hannah', 'Banda'),
+            ('Joseph', 'Tembo'),
+            ('Elizabeth', 'Mulenga'),
+            ('Daniel', 'Chanda'),
+            ('Martha', 'Nyongesa'),
+            ('Samuel', 'Kapenda'),
+            ('Naomi', 'Sakala'),
+            ('Stephen', 'Mwamba'),
+            ('Lydia', 'Lungu'),
+            ('Andrew', 'Mubita'),
+            ('Esther', 'Kunda'),
+            ('Patrick', 'Shimwili'),
+            ('Priscilla', 'Nkonde'),
+            ('Thomas', 'Chilufya'),
+            ('Rebecca', 'Bwalya'),
+            ('Paul', 'Mwila'),
+            ('Deborah', 'Katongo'),
+            ('Mark', 'Sichilima'),
+            ('Rachel', 'Mumbi'),
+            ('Luke', 'Kasongo'),
+            ('Joanna', 'Nsokimieno'),
+            ('Timothy', 'Zimba'),
+        ]
+        for i, (first, last) in enumerate(member_names):
             email = f'{first.lower()}.{last.lower()}{i}@unzalaru.com'
 
             user, created = User.objects.get_or_create(
@@ -203,11 +240,55 @@ class Command(BaseCommand):
                     'department': random.choice(departments),
                     'employment_status': emp_status,
                     'monthly_income': income,
+                    'membership_status': 'ACTIVE',
+                    'income_verified': True,
+                    'verified_income': Decimal(income),
                 }
             )
             members.append(member)
 
         self.stdout.write(self.style.SUCCESS(f'Created {len(members)} members'))
+
+        # Create pending members awaiting approval
+        pending_members = []
+        pending_names = [
+            ('Chanda', 'Mwansa', 'Library Science'),
+            ('Mutale', 'Chewe', 'Veterinary Medicine'),
+            ('Bupe', 'Chisanga', 'Surveying'),
+        ]
+        for idx, (first, last, dept) in enumerate(pending_names):
+            email = f'{first.lower()}.{last.lower()}@unzalaru.com'
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'username': email.split('@')[0],
+                    'first_name': first,
+                    'last_name': last,
+                    'role': 'MEMBER',
+                }
+            )
+            if created:
+                user.set_password('password123')
+                user.save()
+
+            member, created = Member.objects.get_or_create(
+                user=user,
+                defaults={
+                    'nrc_number': f'NRC-P{100000 + idx}',
+                    'phone_number': f'+260{random.randint(700000000, 799999999)}',
+                    'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
+                    'department': dept,
+                    'employment_status': 'CONTRACT',
+                    'monthly_income': random.randint(4000, 12000),
+                    'membership_status': 'PENDING',
+                    'income_verified': False,
+                }
+            )
+            pending_members.append(member)
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Created {len(pending_members)} pending members awaiting approval'
+        ))
 
         # Create loan applications and loans
         statuses = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
@@ -303,7 +384,7 @@ class Command(BaseCommand):
                                 amount_paid = Decimal('0')
                                 remaining = loan.monthly_installment
 
-                        RepaymentSchedule.objects.create(
+                        schedule = RepaymentSchedule.objects.create(
                             loan=loan,
                             installment_number=i,
                             due_date=due_date,
@@ -313,6 +394,17 @@ class Command(BaseCommand):
                             payment_status=payment_status,
                             days_overdue=days_overdue,
                         )
+
+                        # Record payments for paid/partial installments
+                        if amount_paid > 0:
+                            Repayment.objects.create(
+                                loan=loan,
+                                schedule=schedule,
+                                amount=amount_paid,
+                                payment_mode=random.choice(PAYMENT_MODES),
+                                recorded_by=admin_user,
+                                notes='Seed data payment',
+                            )
 
         self.stdout.write(self.style.SUCCESS(
             f'Created {applications_created} applications and {loans_created} loans'
@@ -330,4 +422,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Loaded seed data successfully!'))
         self.stdout.write('')
         self.stdout.write('Admin login: admin@unzalaru.com / password123')
-        self.stdout.write(f'Member logins: first.last@unzalaru.com / password123')
+        self.stdout.write('Member logins (password123):')
+        self.stdout.write('  john.mwansa1@unzalaru.com   (active, with loans)')
+        self.stdout.write('  mary.phiri0@unzalaru.com    (active, with loans)')
+        self.stdout.write('  grace.banda2@unzalaru.com   (active, with loans)')
+        self.stdout.write('Pending member logins (awaiting approval): chanda.mwansa@unzalaru.com, mutale.chewe@unzalaru.com, bupe.chisanga@unzalaru.com / password123')

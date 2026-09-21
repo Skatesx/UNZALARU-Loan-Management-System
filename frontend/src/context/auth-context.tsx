@@ -27,7 +27,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   isAdmin: boolean
   isMember: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
 }
 
@@ -82,9 +82,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setTokens(response.access, response.refresh)
 
     const payload = decodeToken(response.access)
-    if (payload) {
-      setUser(buildUserFromToken(payload))
+    const nextUser = payload ? buildUserFromToken(payload) : null
+    if (nextUser) {
+      setUser(nextUser)
     }
+    return nextUser as User
   }, [])
 
   const logout = useCallback(async () => {

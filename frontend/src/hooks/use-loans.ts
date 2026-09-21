@@ -6,6 +6,7 @@ import type {
   LoanApplicationListItem,
   LoanApplicationCreateRequest,
   RejectApplicationRequest,
+  ApprovalCriteriaEvaluation,
   Loan,
   LoanListItem,
 } from '@/types/loan'
@@ -88,11 +89,26 @@ export function useCreateLoanApplication() {
   })
 }
 
+export function useLoanApprovalCriteria(id: number) {
+  return useQuery({
+    queryKey: ['loan-applications', id, 'criteria'],
+    queryFn: async () => {
+      const response = await apiClient.get<ApprovalCriteriaEvaluation>(
+        `/loan-applications/${id}/criteria/`
+      )
+      return response.data
+    },
+    enabled: !!id,
+  })
+}
+
 export function useApproveLoanApplication() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiClient.put(`/loan-applications/${id}/approve/`, {})
+    mutationFn: async ({ id, overrideReason }: { id: number; overrideReason?: string }) => {
+      const response = await apiClient.put(`/loan-applications/${id}/approve/`, {
+        override_reason: overrideReason || undefined,
+      })
       return response.data
     },
     onSuccess: () => {

@@ -7,8 +7,8 @@ from .models import Member
 class MemberAdmin(admin.ModelAdmin):
     list_display = [
         'member_id', 'user', 'nrc_number', 'department',
-        'employment_status', 'monthly_income', 'membership_status',
-        'account_status', 'date_joined',
+        'employment_status', 'monthly_income', 'income_verified',
+        'membership_status', 'account_status', 'created_at',
     ]
     list_filter = ['department', 'employment_status', 'membership_status', 'account_status']
     search_fields = ['member_id', 'nrc_number', 'user__first_name', 'user__last_name', 'user__email']

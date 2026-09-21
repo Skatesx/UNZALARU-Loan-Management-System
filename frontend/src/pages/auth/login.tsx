@@ -8,11 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Eye, EyeOff } from 'lucide-react'
+import { Loader2, Eye, EyeOff, Landmark } from 'lucide-react'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { login, isAdmin } = useAuth()
+  const { login } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,22 +27,11 @@ export function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     try {
       setError(null)
-      await login(data.email, data.password)
-      // Redirect based on role - need to check role from the login response
-      // The login function sets user in context, so we check after a brief delay
-      setTimeout(() => {
-        const stored = localStorage.getItem('access_token')
-        if (stored) {
-          try {
-            const payload = JSON.parse(atob(stored.split('.')[1]))
-            navigate(payload.role === 'ADMIN' ? '/admin/dashboard' : '/member/dashboard', {
-              replace: true,
-            })
-          } catch {
-            navigate('/admin/dashboard', { replace: true })
-          }
-        }
-      }, 100)
+      const user = await login(data.email, data.password)
+      // login() returns the authenticated user — route by role immediately.
+      navigate(user.role === 'ADMIN' ? '/admin/dashboard' : '/member/dashboard', {
+        replace: true,
+      })
     } catch (err: unknown) {
       const axiosError = err as { response?: { data?: { detail?: string; error?: string } } }
       setError(
@@ -54,84 +43,105 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">U</span>
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Welcome to UNZALARU</CardTitle>
-          <CardDescription>
-            Loan Management System — Sign in to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-400">
-                {error}
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md">
+        <Card className="shadow-sm ring-foreground/10">
+          <CardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-sm">
+                <Landmark className="w-6 h-6 text-white" />
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@unzalaru.com"
-                {...register('email')}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  {...register('password')}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            <CardTitle className="text-2xl tracking-tight">Welcome back</CardTitle>
+            <CardDescription>
+              Sign in to the UNZALARU Loan Management System
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {error && (
+                <div
+                  role="alert"
+                  className="p-3 rounded-lg bg-destructive/10 border border-destructive/25 text-sm text-destructive"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@unzalaru.com"
+                  {...register('email')}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
+                )}
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-              )}
-            </div>
 
-            <div className="flex items-center justify-end">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-emerald-600 hover:text-emerald-700"
-              >
-                Forgot password?
-              </Link>
-            </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs text-primary hover:underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    className="pr-10"
+                    {...register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
+                )}
+              </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+
+              <p className="text-sm text-center text-muted-foreground pt-1">
+                New to UNZALARU?{' '}
+                <Link
+                  to="/signup"
+                  className="text-primary hover:underline underline-offset-4 font-medium"
+                >
+                  Create a member account
+                </Link>
+              </p>
+            </form>
+          </CardContent>
+        </Card>
+        <p className="text-center text-xs text-muted-foreground/70 mt-6">
+          UNZALARU Employees' Loan Management System
+        </p>
+      </div>
     </div>
   )
 }

@@ -88,6 +88,7 @@ class TestEligibilityScoring:
     def test_eligible_recommendation(self, member, loan_type, eligibility_rules):
         """High-scoring application gets ELIGIBLE recommendation."""
         member.monthly_income = Decimal('25000')
+        member.verified_income = Decimal('25000')
         member.save()
 
         app = LoanApplication.objects.create(

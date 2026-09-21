@@ -20,6 +20,13 @@ export interface LoanType {
   updated_at: string
 }
 
+export interface EligibilityAssessment {
+  total_score: number
+  breakdown: Record<string, number>
+  recommendation: string
+  reasons: string[]
+}
+
 export interface LoanApplication {
   id: number
   application_id: string
@@ -38,8 +45,23 @@ export interface LoanApplication {
   reviewed_by: number | null
   reviewed_by_name: string | null
   reviewed_at: string | null
+  eligibility: EligibilityAssessment | null
   created_at: string
   updated_at: string
+}
+
+export interface ApprovalCriterion {
+  key: string
+  label: string
+  passed: boolean
+  value: unknown
+  threshold: unknown
+  detail: string
+}
+
+export interface ApprovalCriteriaEvaluation {
+  passed: boolean
+  results: ApprovalCriterion[]
 }
 
 export interface LoanApplicationListItem {

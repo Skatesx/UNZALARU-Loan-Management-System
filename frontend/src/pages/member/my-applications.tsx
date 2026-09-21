@@ -43,28 +43,28 @@ export function MyApplications() {
           }
         />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Application ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Duration</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Applied</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan Type</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied</th>
                 </tr>
               </thead>
               <tbody>
                 {applications.map((app) => (
-                  <tr key={app.id} className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={app.id} className="border-b last:border-b-0 hover:bg-muted/50 ">
                     <td className="px-4 py-3 font-medium">{app.application_id}</td>
                     <td className="px-4 py-3">{app.loan_type_name}</td>
                     <td className="px-4 py-3">{formatCurrency(app.requested_amount)}</td>
                     <td className="px-4 py-3">{app.duration_months} months</td>
                     <td className="px-4 py-3"><StatusBadge status={app.status} /></td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-muted-foreground">
                       {new Date(app.application_date).toLocaleDateString()}
                     </td>
                   </tr>

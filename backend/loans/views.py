@@ -21,13 +21,19 @@ from .services import LoanApplicationService
 
 
 class LoanTypeViewSet(viewsets.ModelViewSet):
-    """Loan type management endpoints (admin only)."""
+    """Loan type management endpoints."""
 
-    permission_classes = [IsAdminUser]
-    queryset = LoanType.objects.all()
-    serializer_class = LoanTypeSerializer
-    search_fields = ['name']
-    filterset_fields = ['is_active', 'interest_method']
+    def get_permissions(self):
+        # Members need read access to pick a loan type when applying.
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
+
+    def get_queryset(self):
+        queryset = LoanType.objects.all()
+        if self.request.user.is_authenticated and self.request.user.role != 'ADMIN':
+            queryset = queryset.filter(is_active=True)
+        return queryset
 
 
 class LoanApplicationViewSet(viewsets.ModelViewSet):
@@ -81,16 +87,29 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         # Return the created application
         serializer.instance = application
 
+    @action(detail=True, methods=['get'], permission_classes=[IsAdminUser])
+    def criteria(self, request, pk=None):
+        """Evaluate approval criteria for an application."""
+        application = self.get_object()
+        from .criteria import evaluate as evaluate_criteria
+
+        evaluation = evaluate_criteria(application)
+        return Response(evaluation)
+
     @action(detail=True, methods=['put'], permission_classes=[IsAdminUser])
     def approve(self, request, pk=None):
-        """Approve a loan application."""
+        """Approve a loan application (optionally overriding failed criteria)."""
         application = self.get_object()
         serializer = ApproveApplicationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         try:
             service = LoanApplicationService()
-            loan = service.approve_application(application, request.user)
+            loan = service.approve_application(
+                application,
+                request.user,
+                override_reason=serializer.validated_data.get('override_reason'),
+            )
             return Response(
                 LoanSerializer(loan).data,
                 status=status.HTTP_200_OK,

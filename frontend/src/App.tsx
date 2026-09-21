@@ -8,6 +8,8 @@ import { AuthGuard, AdminGuard, MemberGuard, GuestGuard } from '@/routes/guard'
 import { AdminLayout } from '@/components/layout/admin-layout'
 import { MemberLayout } from '@/components/layout/member-layout'
 import { LoginPage } from '@/pages/auth/login'
+import { SignupPage } from '@/pages/auth/signup'
+import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
 import { AdminDashboard } from '@/pages/admin/dashboard'
 import { MemberList } from '@/pages/admin/members/member-list'
 import { MemberDetail } from '@/pages/admin/members/member-detail'
@@ -60,6 +62,22 @@ function App() {
                   element={
                     <GuestGuard>
                       <LoginPage />
+                    </GuestGuard>
+                  }
+                />
+                <Route
+                  path="/signup"
+                  element={
+                    <GuestGuard>
+                      <SignupPage />
+                    </GuestGuard>
+                  }
+                />
+                <Route
+                  path="/forgot-password"
+                  element={
+                    <GuestGuard>
+                      <ForgotPasswordPage />
                     </GuestGuard>
                   }
                 />

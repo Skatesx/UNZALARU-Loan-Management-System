@@ -51,32 +51,32 @@ export function AuditLog() {
       {logs.length === 0 ? (
         <EmptyState title="No audit logs" description="No audit records found." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Timestamp</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">User</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Action</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Entity</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Entity ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Description</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Timestamp</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">User</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Action</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Entity</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Entity ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</th>
                 </tr>
               </thead>
               <tbody>
                 {logs.map((log) => (
                   <tr key={log.id} className="border-b last:border-b-0">
-                    <td className="px-4 py-3 text-gray-500">{formatDateTime(log.timestamp)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatDateTime(log.timestamp)}</td>
                     <td className="px-4 py-3">{log.user_email || 'System'}</td>
                     <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-800">
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted bg-muted">
                         {log.action}
                       </span>
                     </td>
                     <td className="px-4 py-3">{log.entity_type}</td>
                     <td className="px-4 py-3 font-medium">{log.entity_id}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{log.description}</td>
+                    <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{log.description}</td>
                   </tr>
                 ))}
               </tbody>

@@ -50,12 +50,25 @@ class RepaymentSchedule(models.Model):
 class Repayment(models.Model):
     """Individual payment record against a loan installment."""
 
+    PAYMENT_MODE_CHOICES = [
+        ('CASH', 'Cash'),
+        ('BANK_TRANSFER', 'Bank Transfer'),
+        ('MOBILE_MONEY', 'Mobile Money'),
+        ('CHEQUE', 'Cheque'),
+        ('SALARY_DEDUCTION', 'Salary Deduction'),
+        ('OTHER', 'Other'),
+    ]
+
     repayment_id = models.CharField(max_length=20, unique=True, editable=False)
     loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='repayments')
     schedule = models.ForeignKey(
         RepaymentSchedule, on_delete=models.CASCADE, related_name='payments'
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    payment_mode = models.CharField(
+        max_length=20, choices=PAYMENT_MODE_CHOICES, default='CASH',
+        help_text='How the payment was made'
+    )
     payment_date = models.DateTimeField(auto_now_add=True)
     recorded_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True

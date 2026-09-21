@@ -15,7 +15,7 @@ export function ChartCard({ title, children, description, actions }: ChartCardPr
         <div>
           <CardTitle className="text-sm font-medium">{title}</CardTitle>
           {description && (
-            <p className="text-xs text-gray-500 mt-1">{description}</p>
+            <p className="text-xs text-muted-foreground mt-1">{description}</p>
           )}
         </div>
         {actions}

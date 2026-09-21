@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/api/client'
-import type { Member, MemberListItem, MemberCreateRequest, MemberUpdateRequest } from '@/types/member'
+import type {
+  Member,
+  MemberListItem,
+  MemberCreateRequest,
+  MemberUpdateRequest,
+  IncomeVerificationRequest,
+} from '@/types/member'
 import type { Loan } from '@/types/loan'
 import type { Repayment } from '@/types/repayment'
 import type { EligibilityScore } from '@/types/eligibility'
@@ -110,6 +116,71 @@ export function useUpdateMember() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['members'] })
       queryClient.invalidateQueries({ queryKey: ['members', variables.id] })
+    },
+  })
+}
+
+export function useMyProfile() {
+  return useQuery({
+    queryKey: ['members', 'me'],
+    queryFn: async () => {
+      const response = await apiClient.get<Member>('/members/me/')
+      return response.data
+    },
+  })
+}
+
+export function useUpdateMyProfile() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { phone_number?: string; address?: string }) => {
+      const response = await apiClient.put('/members/update_me/', data)
+      return response.data as Member
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members', 'me'] })
+    },
+  })
+}
+
+export function useApproveMember() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiClient.post(`/members/${id}/approve/`)
+      return response.data as Member
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: ['members', id] })
+    },
+  })
+}
+
+export function useRejectMember() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
+      const response = await apiClient.post(`/members/${id}/reject/`, { reason })
+      return response.data as Member
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: ['members', id] })
+    },
+  })
+}
+
+export function useVerifyIncome() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: IncomeVerificationRequest }) => {
+      const response = await apiClient.post(`/members/${id}/verify-income/`, data)
+      return response.data as Member
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['members'] })
+      queryClient.invalidateQueries({ queryKey: ['members', id] })
     },
   })
 }

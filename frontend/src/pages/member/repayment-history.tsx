@@ -42,21 +42,21 @@ export function RepaymentHistory() {
       {!repayments || repayments.length === 0 ? (
         <EmptyState title="No payments" description="No repayment records found." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Date</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Installment</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Installment</th>
                 </tr>
               </thead>
               <tbody>
                 {repayments.map((r) => (
                   <tr key={r.id} className="border-b last:border-b-0">
-                    <td className="px-4 py-3 font-medium text-emerald-600">{r.loan_id}</td>
+                    <td className="px-4 py-3 font-medium text-primary">{r.loan_id}</td>
                     <td className="px-4 py-3 font-medium">{formatCurrency(r.amount)}</td>
                     <td className="px-4 py-3">{formatDateTime(r.payment_date)}</td>
                     <td className="px-4 py-3">#{r.installment_number}</td>

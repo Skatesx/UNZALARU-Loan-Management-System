@@ -19,12 +19,22 @@ class LoanTypeSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class EligibilityScoreInlineSerializer(serializers.Serializer):
+    """Inline representation of an eligibility score."""
+
+    total_score = serializers.FloatField()
+    breakdown = serializers.JSONField()
+    recommendation = serializers.CharField()
+    reasons = serializers.JSONField()
+
+
 class LoanApplicationSerializer(serializers.ModelSerializer):
     """Full serializer for LoanApplication."""
 
     member = MemberListSerializer(read_only=True)
     loan_type_name = serializers.CharField(source='loan_type.name', read_only=True)
     reviewed_by_name = serializers.SerializerMethodField()
+    eligibility = serializers.SerializerMethodField()
 
     class Meta:
         model = LoanApplication
@@ -34,6 +44,7 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
             'application_date', 'current_employment_info', 'income_info',
             'existing_loan_obligations', 'status', 'rejection_reason',
             'reviewed_by', 'reviewed_by_name', 'reviewed_at',
+            'eligibility',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -46,6 +57,17 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
         if obj.reviewed_by:
             return obj.reviewed_by.get_full_name()
         return None
+
+    def get_eligibility(self, obj):
+        score = getattr(obj, 'eligibility', None)
+        if not score:
+            return None
+        return {
+            'total_score': float(score.total_score),
+            'breakdown': score.breakdown,
+            'recommendation': score.recommendation,
+            'reasons': score.reasons,
+        }
 
 
 class LoanApplicationCreateSerializer(serializers.ModelSerializer):
@@ -121,7 +143,14 @@ class LoanListSerializer(serializers.ModelSerializer):
 class ApproveApplicationSerializer(serializers.Serializer):
     """Serializer for approving an application."""
 
-    pass  # No additional fields needed for approval
+    override_reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text=(
+            'Required only when automatic approval criteria fail; '
+            'records the admin justification for overriding them'
+        ),
+    )
 
 
 class RejectApplicationSerializer(serializers.Serializer):

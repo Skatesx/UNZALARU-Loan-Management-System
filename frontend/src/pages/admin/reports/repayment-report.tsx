@@ -67,18 +67,18 @@ export function RepaymentReport() {
       {repayments.length === 0 ? (
         <EmptyState title="No data" description="No repayments match the selected filters." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Expected</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Actual</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Date</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Outstanding</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expected</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actual</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,7 +87,7 @@ export function RepaymentReport() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-medium">{r.member_name}</p>
-                        <p className="text-xs text-gray-500">{r.member_id}</p>
+                        <p className="text-xs text-muted-foreground">{r.member_id}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 font-medium">{r.loan_id}</td>

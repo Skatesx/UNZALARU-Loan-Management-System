@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useMembers } from '@/hooks/use-members'
+import { useMembers, useApproveMember, useRejectMember } from '@/hooks/use-members'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -10,13 +10,16 @@ import { SearchInput } from '@/components/shared/search-input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency } from '@/lib/formatters'
-import { Plus } from 'lucide-react'
+import { BadgeCheck, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function MemberList() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [employmentFilter, setEmploymentFilter] = useState('')
+  const approveMember = useApproveMember()
+  const rejectMember = useRejectMember()
 
   const params: Record<string, unknown> = { page, page_size: 20 }
   if (search) params.search = search
@@ -57,6 +60,7 @@ export function MemberList() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>
+            <SelectItem value="PENDING">Pending</SelectItem>
             <SelectItem value="ACTIVE">Active</SelectItem>
             <SelectItem value="INACTIVE">Inactive</SelectItem>
             <SelectItem value="SUSPENDED">Suspended</SelectItem>
@@ -80,43 +84,84 @@ export function MemberList() {
         <EmptyState title="No members found" description="No members match your search criteria." />
       ) : (
         <>
-          <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="border rounded-lg bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Member ID</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Name</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Email</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Department</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Income</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Joined</th>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member ID</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Department</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Income</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Income Verified</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((member) => (
                     <tr
                       key={member.id}
-                      className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                      className="border-b last:border-b-0 hover:bg-muted/50  cursor-pointer"
                     >
                       <td className="px-4 py-3">
                         <Link
                           to={`/admin/members/${member.id}`}
-                          className="text-emerald-600 hover:text-emerald-700 font-medium"
+                          className="text-primary hover:text-primary/80 font-medium"
                         >
                           {member.member_id}
                         </Link>
                       </td>
                       <td className="px-4 py-3 font-medium">{member.full_name}</td>
-                      <td className="px-4 py-3 text-gray-500">{member.email}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
                       <td className="px-4 py-3">{member.department}</td>
                       <td className="px-4 py-3">{formatCurrency(member.monthly_income)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={member.membership_status} />
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
-                        {new Date(member.date_joined).toLocaleDateString()}
+                      <td className="px-4 py-3">
+                        {member.income_verified ? (
+                          <span className="inline-flex items-center gap-1 text-primary text-sm">
+                            <BadgeCheck className="w-4 h-4" /> Yes
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/70 text-sm">No</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {member.membership_status === 'PENDING' && (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              disabled={approveMember.isPending || rejectMember.isPending}
+                              onClick={() =>
+                                approveMember.mutate(member.id, {
+                                  onSuccess: () => toast.success(`${member.full_name} approved`),
+                                  onError: () => toast.error('Failed to approve member'),
+                                })
+                              }
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={approveMember.isPending || rejectMember.isPending}
+                              onClick={() =>
+                                rejectMember.mutate(
+                                  { id: member.id, reason: 'Rejected from members list' },
+                                  {
+                                    onSuccess: () => toast.success(`${member.full_name} rejected`),
+                                    onError: () => toast.error('Failed to reject member'),
+                                  }
+                                )
+                              }
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -127,7 +172,7 @@ export function MemberList() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, totalCount)} of {totalCount}
               </p>
               <div className="flex gap-2">

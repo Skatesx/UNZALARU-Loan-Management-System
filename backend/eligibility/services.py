@@ -66,7 +66,8 @@ class EligibilityScoringService:
     def _get_factor_value(self, factor, application):
         """Extract the raw value for a factor from the application."""
         if factor == 'INCOME':
-            return float(application.member.monthly_income)
+            # Use admin-verified income when available; fall back to declared.
+            return float(application.member.effective_income)
         elif factor == 'EMPLOYMENT':
             return self._employment_score(application.member)
         elif factor == 'OBLIGATIONS':
@@ -171,6 +172,12 @@ class EligibilityScoringService:
                 reasons.append('✗ Very poor repayment history')
 
         return reasons
+
+    def generate_unverified_income_reason(self, application):
+        """Reason shown when the member's income is not yet verified."""
+        if application.member.income_verified:
+            return '✓ Income verified by administrator'
+        return '~ Income not yet verified by administrator (declared value used)'
 
     def _get_recommendation(self, total_score):
         """Determine recommendation based on total score."""

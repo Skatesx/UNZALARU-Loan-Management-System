@@ -54,31 +54,31 @@ export function LoanList() {
         <EmptyState title="No loans found" description="No loans match your criteria." />
       ) : (
         <>
-          <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+          <div className="border rounded-lg bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Loan ID</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Member</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Principal</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Repaid</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Outstanding</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                    <th className="text-left px-4 py-3 font-medium text-gray-500">Approved</th>
+                  <tr className="border-b bg-muted/50">
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Principal</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repaid</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Approved</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loans.map((loan) => (
                     <tr
                       key={loan.id}
-                      className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      className="border-b last:border-b-0 hover:bg-muted/50 "
                     >
                       <td className="px-4 py-3">
                         <Link
                           to={`/admin/loans/${loan.id}`}
-                          className="text-emerald-600 hover:text-emerald-700 font-medium"
+                          className="text-primary hover:text-primary/80 font-medium"
                         >
                           {loan.loan_id}
                         </Link>
@@ -86,7 +86,7 @@ export function LoanList() {
                       <td className="px-4 py-3">
                         <div>
                           <p className="font-medium">{loan.member_name}</p>
-                          <p className="text-xs text-gray-500">{loan.member_id}</p>
+                          <p className="text-xs text-muted-foreground">{loan.member_id}</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">{loan.loan_type_name}</td>
@@ -96,7 +96,7 @@ export function LoanList() {
                         {formatCurrency(loan.outstanding_balance)}
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={loan.status} /></td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {new Date(loan.date_approved).toLocaleDateString()}
                       </td>
                     </tr>
@@ -108,7 +108,7 @@ export function LoanList() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, totalCount)} of {totalCount}
               </p>
               <div className="flex gap-2">

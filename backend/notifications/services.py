@@ -72,6 +72,59 @@ class NotificationService:
         )
 
     @classmethod
+    def notify_member_pending_approval(cls, member):
+        """Notify member that their registration is awaiting approval."""
+        cls.create(
+            user=member.user,
+            title='Registration Received',
+            message=(
+                'Welcome to UNZALARU! Your membership registration has been '
+                'received and is pending approval by an administrator. You will '
+                'be able to apply for loans once your membership is approved.'
+            ),
+            notification_type='STATUS_CHANGE',
+        )
+
+    @classmethod
+    def notify_member_approved(cls, member):
+        """Notify member that their membership has been approved."""
+        cls.create(
+            user=member.user,
+            title='Membership Approved',
+            message=(
+                f'Congratulations! Your UNZALARU membership has been approved. '
+                f'Your Member ID is {member.member_id}. You can now apply for loans.'
+            ),
+            notification_type='STATUS_CHANGE',
+        )
+
+    @classmethod
+    def notify_member_rejected(cls, member, reason=''):
+        """Notify member that their membership application was rejected."""
+        message = 'Your UNZALARU membership application was not approved.'
+        if reason:
+            message += f' Reason: {reason}'
+        cls.create(
+            user=member.user,
+            title='Membership Application Rejected',
+            message=message,
+            notification_type='STATUS_CHANGE',
+        )
+
+    @classmethod
+    def notify_income_verified(cls, member):
+        """Notify member that their income has been verified."""
+        cls.create(
+            user=member.user,
+            title='Income Verified',
+            message=(
+                f'Your monthly income of K{member.effective_income} has been '
+                f'verified by a UNZALARU administrator.'
+            ),
+            notification_type='STATUS_CHANGE',
+        )
+
+    @classmethod
     def notify_status_change(cls, user, title, message):
         """Generic status change notification."""
         cls.create(

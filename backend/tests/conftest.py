@@ -43,7 +43,7 @@ def member_user(db):
 
 @pytest.fixture
 def member(member_user):
-    """Create a member profile."""
+    """Create an approved member profile."""
     return Member.objects.create(
         user=member_user,
         nrc_number='NRC-123456',
@@ -52,7 +52,39 @@ def member(member_user):
         department='Computer Science',
         employment_status='PERMANENT',
         monthly_income=Decimal('10000.00'),
+        membership_status='ACTIVE',
+        income_verified=True,
+        verified_income=Decimal('10000.00'),
     )
+
+
+@pytest.fixture
+def pending_member(pending_member_user):
+    """Create a pending (unapproved) member profile."""
+    return Member.objects.create(
+        user=pending_member_user,
+        nrc_number='NRC-PENDING1',
+        phone_number='+260700000001',
+        address='456 Test Road, Lusaka',
+        department='Mathematics',
+        employment_status='CONTRACT',
+        monthly_income=Decimal('8000.00'),
+        membership_status='PENDING',
+    )
+
+
+@pytest.fixture
+def pending_member_user(db):
+    """Create a member user awaiting approval."""
+    user = User.objects.create_user(
+        email='pending@test.com',
+        username='pending_test',
+        password='testpass123',
+        first_name='Pending',
+        last_name='Member',
+        role='MEMBER',
+    )
+    return user
 
 
 @pytest.fixture

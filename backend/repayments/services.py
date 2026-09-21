@@ -46,7 +46,8 @@ class RepaymentService:
     """Handles repayment recording and balance updates."""
 
     @transaction.atomic
-    def record_payment(self, loan, amount, recorded_by, schedule_id=None, notes=''):
+    def record_payment(self, loan, amount, recorded_by, schedule_id=None,
+                       notes='', payment_mode='CASH'):
         """
         Record a repayment against a loan.
 
@@ -55,11 +56,11 @@ class RepaymentService:
         3. If schedule_id provided, apply to specific installment
         4. Otherwise, apply to oldest outstanding installment(s)
         5. Handle partial payments
-        6. Handle overpayment
+        6. Handle overpayment (capped at total repayment)
         7. Update installment status
         8. Update loan balance
         9. If fully repaid, mark loan as COMPLETED
-        10. Create audit log entry
+        10. Create audit log entry with payment mode
         """
         from .models import Repayment, RepaymentSchedule
 
@@ -95,6 +96,7 @@ class RepaymentService:
                 loan=loan,
                 schedule=schedule,
                 amount=payment_for_installment,
+                payment_mode=payment_mode,
                 recorded_by=recorded_by,
                 notes=notes,
             )
@@ -114,9 +116,13 @@ class RepaymentService:
 
             remaining_payment -= payment_for_installment
 
-        # Update loan
-        loan.amount_repaid += Decimal(str(amount))
-        loan.outstanding_balance -= Decimal(str(amount))
+        # Update loan (capped so overpayment can't push balance negative)
+        applied_amount = Decimal(str(amount))
+        if applied_amount > loan.outstanding_balance:
+            applied_amount = loan.outstanding_balance
+
+        loan.amount_repaid += applied_amount
+        loan.outstanding_balance -= applied_amount
 
         if loan.outstanding_balance <= 0:
             loan.outstanding_balance = Decimal('0')
@@ -136,8 +142,15 @@ class RepaymentService:
             action='RECORDED_REPAYMENT',
             entity_type='Loan',
             entity_id=str(loan.loan_id),
-            description=f'Recorded payment of K{amount} for loan {loan.loan_id}',
-            new_value={'amount': str(amount), 'loan_id': loan.loan_id},
+            description=(
+                f'Recorded payment of K{amount} ({payment_mode}) '
+                f'for loan {loan.loan_id}'
+            ),
+            new_value={
+                'amount': str(amount),
+                'payment_mode': payment_mode,
+                'loan_id': loan.loan_id,
+            },
         )
 
         return payments_created

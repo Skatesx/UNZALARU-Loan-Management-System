@@ -22,27 +22,27 @@ export function MyLoans() {
       {loans.length === 0 ? (
         <EmptyState title="No loans" description="You don't have any loans yet." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Principal</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Repaid</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Outstanding</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Monthly</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Principal</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repaid</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Monthly</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loans.map((loan) => (
-                  <tr key={loan.id} className="border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={loan.id} className="border-b last:border-b-0 hover:bg-muted/50 ">
                     <td className="px-4 py-3">
                       <Link
                         to={`/member/my-loans/${loan.id}`}
-                        className="text-emerald-600 hover:text-emerald-700 font-medium"
+                        className="text-primary hover:text-primary/80 font-medium"
                       >
                         {loan.loan_id}
                       </Link>

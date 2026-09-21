@@ -43,27 +43,27 @@ export function LoanDetail() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Principal</p>
-            <p className="text-xl font-bold text-emerald-600">{formatCurrency(loan.principal)}</p>
+            <p className="text-xs text-muted-foreground">Principal</p>
+            <p className="text-xl font-bold text-primary">{formatCurrency(loan.principal)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Monthly Installment</p>
+            <p className="text-xs text-muted-foreground">Monthly Installment</p>
             <p className="text-xl font-bold">{formatCurrency(loan.monthly_installment)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Outstanding</p>
+            <p className="text-xs text-muted-foreground">Outstanding</p>
             <p className="text-xl font-bold text-amber-600">{formatCurrency(loan.outstanding_balance)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Progress</p>
+            <p className="text-xs text-muted-foreground">Progress</p>
             <p className="text-xl font-bold">{completionPercent}%</p>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+            <div className="mt-2 w-full bg-muted rounded-full h-1.5">
               <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${completionPercent}%` }} />
             </div>
           </CardContent>
@@ -82,12 +82,12 @@ export function LoanDetail() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">#</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Due Date</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Expected</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Paid</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Remaining</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">#</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Due Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expected</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Paid</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Remaining</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -104,7 +104,7 @@ export function LoanDetail() {
                   </tbody>
                 </table>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-8">No schedule available</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No schedule available</p>
               )}
             </CardContent>
           </Card>
@@ -116,15 +116,15 @@ export function LoanDetail() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Date</th>
-                      <th className="text-left px-4 py-3 font-medium text-gray-500">Installment</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Installment</th>
                     </tr>
                   </thead>
                   <tbody>
                     {repayments.map((r) => (
                       <tr key={r.id} className="border-b last:border-b-0">
-                        <td className="px-4 py-3 font-medium text-emerald-600">{formatCurrency(r.amount)}</td>
+                        <td className="px-4 py-3 font-medium text-primary">{formatCurrency(r.amount)}</td>
                         <td className="px-4 py-3">{formatDateTime(r.payment_date)}</td>
                         <td className="px-4 py-3">#{r.installment_number}</td>
                       </tr>
@@ -132,7 +132,7 @@ export function LoanDetail() {
                   </tbody>
                 </table>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-8">No payments recorded yet</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No payments recorded yet</p>
               )}
             </CardContent>
           </Card>

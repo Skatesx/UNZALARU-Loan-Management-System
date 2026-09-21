@@ -87,19 +87,19 @@ export function LoanReport() {
       {loans.length === 0 ? (
         <EmptyState title="No loan data" description="No loans match the selected filters." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Loan ID</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Interest</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Total Repayment</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Duration</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Date Approved</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Interest</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Repayment</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date Approved</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,7 +109,7 @@ export function LoanReport() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-medium">{loan.member_name}</p>
-                        <p className="text-xs text-gray-500">{loan.member_id}</p>
+                        <p className="text-xs text-muted-foreground">{loan.member_id}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3">{formatCurrency(loan.amount)}</td>
@@ -117,7 +117,7 @@ export function LoanReport() {
                     <td className="px-4 py-3 font-medium">{formatCurrency(loan.total_repayment)}</td>
                     <td className="px-4 py-3">{loan.duration} months</td>
                     <td className="px-4 py-3"><StatusBadge status={loan.status} /></td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-muted-foreground">
                       {loan.date_approved ? new Date(loan.date_approved).toLocaleDateString() : '—'}
                     </td>
                   </tr>

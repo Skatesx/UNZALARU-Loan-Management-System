@@ -86,11 +86,24 @@ class LoanApplicationService:
         """Create a new loan application with validation."""
         from loans.models import LoanApplication
 
+        # Pending members cannot apply for loans
+        if member.membership_status == 'PENDING':
+            raise ValueError(
+                'Your membership is pending approval. '
+                'You can apply for loans once an administrator approves your membership.'
+            )
+
         # Validate member is active
         if member.membership_status != 'ACTIVE':
             raise ValueError('Member account is not active')
         if member.account_status != 'ACTIVE':
             raise ValueError('Member account is deactivated')
+
+        # Validate loan type is provided and active
+        if loan_type is None:
+            raise ValueError('A valid loan type is required')
+        if not loan_type.is_active:
+            raise ValueError('This loan type is not currently available')
 
         # Validate amount within loan type limits
         if requested_amount < loan_type.min_amount:
@@ -142,17 +155,58 @@ class LoanApplicationService:
         scoring_service = EligibilityScoringService()
         scoring_service.calculate(application)
 
+        # Notify member of submission
+        from notifications.services import NotificationService
+        NotificationService.notify_loan_submitted(application)
+
         return application
 
     @transaction.atomic
-    def approve_application(self, application, approved_by):
-        """Approve a loan application and create the loan."""
+    def approve_application(self, application, approved_by, override_reason=None):
+        """Approve a loan application and create the loan.
+
+        Approval criteria are evaluated first; a failed evaluation raises
+        ValueError unless the admin supplies an override_reason, which is
+        stored on the application and audit-logged.
+        """
         from loans.models import Loan
         from notifications.services import NotificationService
         from repayments.services import RepaymentScheduleService
 
         if application.status not in ['PENDING', 'UNDER_REVIEW']:
             raise ValueError(f'Cannot approve application with status {application.status}')
+
+        # Evaluate configurable approval criteria
+        from loans.criteria import evaluate as evaluate_criteria
+        from audit.services import AuditService
+
+        evaluation = evaluate_criteria(application)
+        if not evaluation['passed']:
+            if not override_reason:
+                failed = [r['label'] for r in evaluation['results'] if not r['passed']]
+                raise ValueError(
+                    'Approval criteria not met: ' + '; '.join(failed)
+                )
+            # Admin override — record it
+            application.income_info = {
+                **(application.income_info or {}),
+                'criteria_override_reason': override_reason,
+                'criteria_override_by': approved_by.email,
+                'criteria_override_failed': [
+                    r['key'] for r in evaluation['results'] if not r['passed']
+                ],
+            }
+            AuditService.log_action(
+                user=approved_by,
+                action='OVERRIDDEN_APPROVAL_CRITERIA',
+                entity_type='LoanApplication',
+                entity_id=application.application_id,
+                description=(
+                    f'Admin approved application {application.application_id} '
+                    f'despite failed criteria: {override_reason}'
+                ),
+                new_value={'override_reason': override_reason},
+            )
 
         # Calculate loan details
         loan_details = self.calculation_service.calculate_loan(

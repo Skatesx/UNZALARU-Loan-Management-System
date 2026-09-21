@@ -112,7 +112,7 @@ export function LoanTypeConfig() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">{lt.name}</CardTitle>
               <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-0.5 rounded ${lt.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded ${lt.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
                   {lt.is_active ? 'Active' : 'Inactive'}
                 </span>
                 <Button variant="ghost" size="sm" onClick={() => handleOpen(lt)}>
@@ -121,22 +121,22 @@ export function LoanTypeConfig() {
               </div>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p className="text-gray-500">{lt.description}</p>
+              <p className="text-muted-foreground">{lt.description}</p>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <div>
-                  <p className="text-xs text-gray-400">Amount Range</p>
+                  <p className="text-xs text-muted-foreground/70">Amount Range</p>
                   <p className="font-medium">K{Number(lt.min_amount).toLocaleString()} — K{Number(lt.max_amount).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Duration</p>
+                  <p className="text-xs text-muted-foreground/70">Duration</p>
                   <p className="font-medium">{lt.min_duration_months}—{lt.max_duration_months} months</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Interest Rate</p>
+                  <p className="text-xs text-muted-foreground/70">Interest Rate</p>
                   <p className="font-medium">{lt.interest_rate}% ({lt.interest_method})</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-400">Multiple Active</p>
+                  <p className="text-xs text-muted-foreground/70">Multiple Active</p>
                   <p className="font-medium">{lt.allow_multiple_active ? 'Allowed' : 'Not Allowed'}</p>
                 </div>
               </div>

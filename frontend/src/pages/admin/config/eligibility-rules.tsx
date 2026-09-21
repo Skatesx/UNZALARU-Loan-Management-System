@@ -27,19 +27,19 @@ export function EligibilityRuleConfig() {
           <Card key={rule.id}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">{rule.name}</CardTitle>
-              <span className="text-sm font-bold text-emerald-600">{rule.weight}%</span>
+              <span className="text-sm font-bold text-primary">{rule.weight}%</span>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Factor</span>
+                <span className="text-muted-foreground">Factor</span>
                 <span className="font-medium">{rule.factor}</span>
               </div>
               <Progress value={Number(rule.weight)} className="h-2" />
               <div>
-                <p className="text-xs text-gray-400 mb-2">Thresholds</p>
+                <p className="text-xs text-muted-foreground/70 mb-2">Thresholds</p>
                 <div className="space-y-1">
                   {rule.thresholds?.map((t: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800 px-3 py-1.5 rounded">
+                    <div key={idx} className="flex items-center justify-between text-xs bg-muted/50 px-3 py-1.5 rounded">
                       <span>K{t.min?.toLocaleString()} — {t.max ? `K${t.max.toLocaleString()}` : '∞'}</span>
                       <span className="font-medium">Score: {t.score}</span>
                     </div>
@@ -47,8 +47,8 @@ export function EligibilityRuleConfig() {
                 </div>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                <span className={`w-2 h-2 rounded-full ${rule.is_active ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                <span className="text-gray-500">{rule.is_active ? 'Active' : 'Inactive'}</span>
+                <span className={`w-2 h-2 rounded-full ${rule.is_active ? 'bg-emerald-500' : 'bg-border'}`} />
+                <span className="text-muted-foreground">{rule.is_active ? 'Active' : 'Inactive'}</span>
               </div>
             </CardContent>
           </Card>

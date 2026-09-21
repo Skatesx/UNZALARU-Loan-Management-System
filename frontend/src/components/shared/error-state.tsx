@@ -8,14 +8,12 @@ interface ErrorStateProps {
 
 export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center mb-4">
-        <AlertCircle className="w-8 h-8 text-red-500" />
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="w-12 h-12 rounded-xl bg-destructive/10 flex items-center justify-center mb-4 ring-1 ring-destructive/20">
+        <AlertCircle className="w-6 h-6 text-destructive" />
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">Error</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-4">
-        {message}
-      </p>
+      <h3 className="text-base font-semibold text-foreground mb-1">Something went wrong</h3>
+      <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">{message}</p>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
           <RefreshCw className="w-4 h-4 mr-2" />

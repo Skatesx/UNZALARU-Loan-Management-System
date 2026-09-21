@@ -21,16 +21,16 @@ export function EligibilityReport() {
       {report.length === 0 ? (
         <EmptyState title="No data" description="No eligibility records found." />
       ) : (
-        <div className="border rounded-lg bg-white dark:bg-gray-900 overflow-hidden">
+        <div className="border rounded-lg bg-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Application</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Score</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Recommendation</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Decision</th>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Score</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recommendation</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Decision</th>
                 </tr>
               </thead>
               <tbody>
@@ -39,7 +39,7 @@ export function EligibilityReport() {
                     <td className="px-4 py-3">
                       <div>
                         <p className="font-medium">{r.member_name}</p>
-                        <p className="text-xs text-gray-500">{r.member_id}</p>
+                        <p className="text-xs text-muted-foreground">{r.member_id}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 font-medium">{r.application_id}</td>

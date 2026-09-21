@@ -7,6 +7,27 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>
 
+export const signupSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  confirm_password: z.string().min(1, 'Please confirm your password'),
+  nrc_number: z.string().min(1, 'NRC number is required'),
+  phone_number: z.string().min(1, 'Phone number is required'),
+  address: z.string().min(1, 'Address is required'),
+  department: z.string().min(1, 'Department is required'),
+  employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
+    errorMap: () => ({ message: 'Please select an employment status' }),
+  }),
+  monthly_income: z.coerce.number().positive('Income must be positive'),
+}).refine((data) => data.password === data.confirm_password, {
+  message: 'Passwords do not match',
+  path: ['confirm_password'],
+})
+
+export type SignupFormData = z.infer<typeof signupSchema>
+
 export const passwordChangeSchema = z.object({
   old_password: z.string().min(1, 'Current password is required'),
   new_password: z.string().min(8, 'Password must be at least 8 characters'),
@@ -48,6 +69,12 @@ export type LoanApplicationFormData = z.infer<typeof loanApplicationSchema>
 export const repaymentSchema = z.object({
   loan_id: z.string().min(1, 'Loan ID is required'),
   amount: z.coerce.number().positive('Amount must be positive'),
+  payment_mode: z.enum(
+    ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE', 'SALARY_DEDUCTION', 'OTHER'],
+    {
+      errorMap: () => ({ message: 'Please select a payment mode' }),
+    }
+  ),
   schedule_id: z.string().optional(),
   notes: z.string().optional(),
 })

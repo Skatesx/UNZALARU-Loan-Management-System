@@ -11,8 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { formatCurrency, formatDateTime } from '@/lib/formatters'
+import { PAYMENT_MODE_LABELS, type PaymentMode } from '@/types/repayment'
 import { toast } from 'sonner'
 import { ArrowLeft, Loader2, HandCoins } from 'lucide-react'
 
@@ -27,6 +34,7 @@ export function LoanDetail() {
 
   const [showRepaymentForm, setShowRepaymentForm] = useState(false)
   const [repaymentAmount, setRepaymentAmount] = useState('')
+  const [repaymentMode, setRepaymentMode] = useState<PaymentMode>('CASH')
   const [repaymentNotes, setRepaymentNotes] = useState('')
 
   if (isLoading) return <LoadingSkeleton type="detail" />
@@ -44,11 +52,13 @@ export function LoanDetail() {
       await recordRepayment.mutateAsync({
         loan_id: loan.loan_id,
         amount,
+        payment_mode: repaymentMode,
         notes: repaymentNotes,
       })
       toast.success('Repayment recorded successfully')
       setShowRepaymentForm(false)
       setRepaymentAmount('')
+      setRepaymentMode('CASH')
       setRepaymentNotes('')
       refetch()
     } catch {
@@ -82,33 +92,33 @@ export function LoanDetail() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Principal</p>
-            <p className="text-xl font-bold text-emerald-600">{formatCurrency(loan.principal)}</p>
+            <p className="text-xs text-muted-foreground">Principal</p>
+            <p className="text-xl font-bold text-primary">{formatCurrency(loan.principal)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Total Interest</p>
+            <p className="text-xs text-muted-foreground">Total Interest</p>
             <p className="text-xl font-bold">{formatCurrency(loan.total_interest)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Monthly Installment</p>
+            <p className="text-xs text-muted-foreground">Monthly Installment</p>
             <p className="text-xl font-bold">{formatCurrency(loan.monthly_installment)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-xs text-gray-500">Outstanding Balance</p>
+            <p className="text-xs text-muted-foreground">Outstanding Balance</p>
             <p className="text-xl font-bold text-amber-600">{formatCurrency(loan.outstanding_balance)}</p>
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+            <div className="mt-2 w-full bg-muted rounded-full h-1.5">
               <div
                 className="bg-emerald-500 h-1.5 rounded-full transition-all"
                 style={{ width: `${completionPercent}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">{completionPercent}% repaid</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">{completionPercent}% repaid</p>
           </CardContent>
         </Card>
       </div>
@@ -132,7 +142,7 @@ export function LoanDetail() {
             </CardHeader>
             <CardContent>
               {showRepaymentForm && (
-                <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 space-y-3">
+                <div className="mb-6 p-4 border rounded-lg bg-muted/50 space-y-3">
                   <h4 className="text-sm font-medium">Record Repayment</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -144,6 +154,24 @@ export function LoanDetail() {
                         onChange={(e) => setRepaymentAmount(e.target.value)}
                         placeholder="0.00"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Payment Mode</Label>
+                      <Select
+                        value={repaymentMode}
+                        onValueChange={(v) => setRepaymentMode(v as PaymentMode)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Object.keys(PAYMENT_MODE_LABELS) as PaymentMode[]).map((mode) => (
+                            <SelectItem key={mode} value={mode}>
+                              {PAYMENT_MODE_LABELS[mode]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label>Notes (optional)</Label>
@@ -171,19 +199,19 @@ export function LoanDetail() {
               )}
 
               {!schedule || schedule.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No schedule found.</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No schedule found.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">#</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Due Date</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Expected</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Paid</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Remaining</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Status</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Overdue</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">#</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Due Date</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Expected</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Paid</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Remaining</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Status</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Overdue</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -199,7 +227,7 @@ export function LoanDetail() {
                             {s.days_overdue > 0 ? (
                               <span className="text-red-600 font-medium">{s.days_overdue} days</span>
                             ) : (
-                              <span className="text-gray-400">—</span>
+                              <span className="text-muted-foreground/70">—</span>
                             )}
                           </td>
                         </tr>
@@ -219,18 +247,19 @@ export function LoanDetail() {
             </CardHeader>
             <CardContent>
               {!repayments || repayments.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No payments recorded yet.</p>
+                <p className="text-sm text-muted-foreground text-center py-8">No payments recorded yet.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Repayment ID</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Installment</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Amount</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Date</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Recorded By</th>
-                        <th className="text-left px-3 py-2 font-medium text-gray-500">Notes</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Repayment ID</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Installment</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Amount</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Mode</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Recorded By</th>
+                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Notes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -238,10 +267,13 @@ export function LoanDetail() {
                         <tr key={r.id} className="border-b last:border-b-0">
                           <td className="px-3 py-2 font-medium">{r.repayment_id}</td>
                           <td className="px-3 py-2">#{r.installment_number}</td>
-                          <td className="px-3 py-2 font-medium text-emerald-600">{formatCurrency(r.amount)}</td>
+                          <td className="px-3 py-2 font-medium text-primary">{formatCurrency(r.amount)}</td>
+                          <td className="px-3 py-2">
+                            {PAYMENT_MODE_LABELS[r.payment_mode] ?? r.payment_mode}
+                          </td>
                           <td className="px-3 py-2">{formatDateTime(r.payment_date)}</td>
                           <td className="px-3 py-2">{r.recorded_by_name || 'System'}</td>
-                          <td className="px-3 py-2 text-gray-500">{r.notes || '—'}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{r.notes || '—'}</td>
                         </tr>
                       ))}
                     </tbody>

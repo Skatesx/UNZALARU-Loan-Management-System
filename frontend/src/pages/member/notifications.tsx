@@ -31,17 +31,17 @@ export function MemberNotificationList() {
               className={`p-4 border rounded-lg cursor-pointer transition-colors ${
                 !n.is_read
                   ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200'
-                  : 'bg-white dark:bg-gray-900 hover:bg-gray-50'
+                  : 'bg-card hover:bg-muted/50'
               }`}
               onClick={() => markAsRead(n.id)}
             >
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium">{n.title}</p>
-                  <p className="text-sm text-gray-500 mt-1">{n.message}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400">{formatRelativeTime(n.created_at)}</span>
+                  <span className="text-xs text-muted-foreground/70">{formatRelativeTime(n.created_at)}</span>
                   {!n.is_read && <span className="w-2 h-2 bg-emerald-500 rounded-full" />}
                 </div>
               </div>

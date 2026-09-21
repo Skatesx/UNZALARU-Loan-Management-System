@@ -34,8 +34,8 @@ class RepaymentSerializer(serializers.ModelSerializer):
         model = Repayment
         fields = [
             'id', 'repayment_id', 'loan', 'loan_id', 'schedule',
-            'installment_number', 'amount', 'payment_date', 'recorded_by',
-            'recorded_by_name', 'notes', 'created_at',
+            'installment_number', 'amount', 'payment_mode', 'payment_date',
+            'recorded_by', 'recorded_by_name', 'notes', 'created_at',
         ]
         read_only_fields = ['id', 'repayment_id', 'payment_date', 'created_at']
 
@@ -50,5 +50,10 @@ class RepaymentCreateSerializer(serializers.Serializer):
 
     loan_id = serializers.CharField(required=True)
     amount = serializers.DecimalField(max_digits=12, decimal_places=2, required=True)
+    payment_mode = serializers.ChoiceField(
+        choices=['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE',
+                 'SALARY_DEDUCTION', 'OTHER'],
+        default='CASH',
+    )
     schedule_id = serializers.CharField(required=False, allow_blank=True)
     notes = serializers.CharField(required=False, allow_blank=True)

@@ -26,27 +26,27 @@ export function formatPercent(value: number): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    PENDING: 'bg-amber-100 text-amber-800 border-amber-200',
-    UNDER_REVIEW: 'bg-blue-100 text-blue-800 border-blue-200',
-    APPROVED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    REJECTED: 'bg-red-100 text-red-800 border-red-200',
-    CANCELLED: 'bg-gray-100 text-gray-800 border-gray-200',
-    ACTIVE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    COMPLETED: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    DEFAULTED: 'bg-red-100 text-red-800 border-red-200',
-    WRITTEN_OFF: 'bg-gray-100 text-gray-800 border-gray-200',
-    PAID: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    OVERDUE: 'bg-red-100 text-red-800 border-red-200',
-    PARTIALLY_PAID: 'bg-amber-100 text-amber-800 border-amber-200',
-    CURRENT: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    AT_RISK: 'bg-orange-100 text-orange-800 border-orange-200',
-    DEFAULTER: 'bg-red-100 text-red-800 border-red-200',
-    SEVERE_DEFAULTER: 'bg-red-200 text-red-900 border-red-300',
-    ELIGIBLE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    REVIEW: 'bg-amber-100 text-amber-800 border-amber-200',
-    NOT_ELIGIBLE: 'bg-red-100 text-red-800 border-red-200',
+    PENDING: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/25',
+    UNDER_REVIEW: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/25',
+    APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    REJECTED: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/25',
+    CANCELLED: 'bg-muted text-muted-foreground border-border',
+    ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    DEFAULTED: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/25',
+    WRITTEN_OFF: 'bg-muted text-muted-foreground border-border',
+    PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    OVERDUE: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/25',
+    PARTIALLY_PAID: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/25',
+    CURRENT: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    AT_RISK: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/25',
+    DEFAULTER: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/25',
+    SEVERE_DEFAULTER: 'bg-red-100 text-red-900 border-red-300 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40',
+    ELIGIBLE: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25',
+    REVIEW: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/25',
+    NOT_ELIGIBLE: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/25',
   }
-  return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200'
+  return colors[status] || 'bg-muted text-muted-foreground border-border'
 }
 
 export function getStatusLabel(status: string): string {

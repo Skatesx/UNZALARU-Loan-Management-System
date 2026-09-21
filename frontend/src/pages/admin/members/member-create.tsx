@@ -55,54 +55,54 @@ export function MemberCreate() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Account section */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Account Details</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Account Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email *</Label>
                   <Input id="email" type="email" {...register('email')} />
-                  {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                  {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="username">Username *</Label>
                   <Input id="username" {...register('username')} />
-                  {errors.username && <p className="text-sm text-red-500">{errors.username.message}</p>}
+                  {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name *</Label>
                   <Input id="first_name" {...register('first_name')} />
-                  {errors.first_name && <p className="text-sm text-red-500">{errors.first_name.message}</p>}
+                  {errors.first_name && <p className="text-sm text-destructive">{errors.first_name.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="last_name">Last Name *</Label>
                   <Input id="last_name" {...register('last_name')} />
-                  {errors.last_name && <p className="text-sm text-red-500">{errors.last_name.message}</p>}
+                  {errors.last_name && <p className="text-sm text-destructive">{errors.last_name.message}</p>}
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="password">Password *</Label>
                   <Input id="password" type="password" {...register('password')} />
-                  {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
+                  {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
                 </div>
               </div>
             </div>
 
             {/* Profile section */}
             <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">Profile Details</h3>
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profile Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nrc_number">NRC Number *</Label>
                   <Input id="nrc_number" {...register('nrc_number')} />
-                  {errors.nrc_number && <p className="text-sm text-red-500">{errors.nrc_number.message}</p>}
+                  {errors.nrc_number && <p className="text-sm text-destructive">{errors.nrc_number.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone_number">Phone Number *</Label>
                   <Input id="phone_number" {...register('phone_number')} />
-                  {errors.phone_number && <p className="text-sm text-red-500">{errors.phone_number.message}</p>}
+                  {errors.phone_number && <p className="text-sm text-destructive">{errors.phone_number.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">Department *</Label>
                   <Input id="department" {...register('department')} />
-                  {errors.department && <p className="text-sm text-red-500">{errors.department.message}</p>}
+                  {errors.department && <p className="text-sm text-destructive">{errors.department.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label>Employment Status *</Label>
@@ -120,17 +120,17 @@ export function MemberCreate() {
                       <SelectItem value="RETIRED">Retired</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.employment_status && <p className="text-sm text-red-500">{errors.employment_status.message}</p>}
+                  {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status.message}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="monthly_income">Monthly Income (K) *</Label>
                   <Input id="monthly_income" type="number" step="0.01" {...register('monthly_income')} />
-                  {errors.monthly_income && <p className="text-sm text-red-500">{errors.monthly_income.message}</p>}
+                  {errors.monthly_income && <p className="text-sm text-destructive">{errors.monthly_income.message}</p>}
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address *</Label>
                   <Textarea id="address" {...register('address')} />
-                  {errors.address && <p className="text-sm text-red-500">{errors.address.message}</p>}
+                  {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
                 </div>
               </div>
             </div>

@@ -70,6 +70,7 @@ class RepaymentViewSet(viewsets.ModelViewSet):
                 recorded_by=request.user,
                 schedule_id=schedule.installment_id if schedule else None,
                 notes=serializer.validated_data.get('notes', ''),
+                payment_mode=serializer.validated_data.get('payment_mode', 'CASH'),
             )
             return Response(
                 RepaymentSerializer(payments, many=True).data,

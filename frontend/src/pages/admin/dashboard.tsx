@@ -34,7 +34,17 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const CHART_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+const CHART_COLORS = ['#0E9F7A', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+
+/** Theme-aware tooltip styles for recharts. */
+const tooltipStyle = {
+  backgroundColor: 'hsl(0 0% 100% / 0.97)',
+  border: '1px solid hsl(215 16% 89%)',
+  borderRadius: '10px',
+  boxShadow: '0 4px 12px rgb(0 0 0 / 0.08)',
+  fontSize: '12px',
+  padding: '8px 10px',
+}
 
 export function AdminDashboard() {
   const { data: summary, isLoading, error, refetch } = useAdminDashboardSummary()
@@ -69,25 +79,25 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Admin Dashboard</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+        <p className="text-sm text-muted-foreground">
           Overview of the UNZALARU loan management system
         </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Total Members" value={formatNumber(summary?.total_members || 0)} icon={<Users className="w-5 h-5" />} />
-        <StatCard title="Pending Applications" value={formatNumber(summary?.pending_applications || 0)} icon={<FileText className="w-5 h-5" />} />
-        <StatCard title="Active Loans" value={formatNumber(summary?.active_loans || 0)} icon={<Activity className="w-5 h-5" />} />
-        <StatCard title="Total Loaned" value={formatCurrency(summary?.total_amount_loaned || 0)} icon={<DollarSign className="w-5 h-5" />} />
-        <StatCard title="Total Repaid" value={formatCurrency(summary?.total_amount_repaid || 0)} icon={<TrendingUp className="w-5 h-5" />} />
+        <StatCard title="Total Members" value={formatNumber(summary?.total_members || 0)} icon={<Users className="w-5 h-5" />} tone="brand" />
+        <StatCard title="Pending Applications" value={formatNumber(summary?.pending_applications || 0)} icon={<FileText className="w-5 h-5" />} tone="info" />
+        <StatCard title="Active Loans" value={formatNumber(summary?.active_loans || 0)} icon={<Activity className="w-5 h-5" />} tone="brand" />
+        <StatCard title="Total Loaned" value={formatCurrency(summary?.total_amount_loaned || 0)} icon={<DollarSign className="w-5 h-5" />} tone="brand" />
+        <StatCard title="Total Repaid" value={formatCurrency(summary?.total_amount_repaid || 0)} icon={<TrendingUp className="w-5 h-5" />} tone="info" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard title="Outstanding Balance" value={formatCurrency(summary?.outstanding_balance || 0)} icon={<AlertTriangle className="w-5 h-5" />} />
-        <StatCard title="Approved Loans" value={formatNumber(summary?.approved_loans || 0)} icon={<CheckCircle className="w-5 h-5" />} />
-        <StatCard title="At Risk" value={formatNumber(summary?.at_risk_borrowers || 0)} icon={<AlertCircle className="w-5 h-5" />} />
-        <StatCard title="Defaulters" value={formatNumber(summary?.defaulters || 0)} icon={<XCircle className="w-5 h-5" />} />
-        <StatCard title="Severe Defaulters" value={formatNumber(summary?.severe_defaulters || 0)} icon={<AlertOctagon className="w-5 h-5" />} />
+        <StatCard title="Outstanding Balance" value={formatCurrency(summary?.outstanding_balance || 0)} icon={<AlertTriangle className="w-5 h-5" />} tone="warning" />
+        <StatCard title="Approved Loans" value={formatNumber(summary?.approved_loans || 0)} icon={<CheckCircle className="w-5 h-5" />} tone="brand" />
+        <StatCard title="At Risk" value={formatNumber(summary?.at_risk_borrowers || 0)} icon={<AlertCircle className="w-5 h-5" />} tone="warning" />
+        <StatCard title="Defaulters" value={formatNumber(summary?.defaulters || 0)} icon={<XCircle className="w-5 h-5" />} tone="danger" />
+        <StatCard title="Severe Defaulters" value={formatNumber(summary?.severe_defaulters || 0)} icon={<AlertOctagon className="w-5 h-5" />} tone="danger" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -95,10 +105,10 @@ export function AdminDashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <AreaChart data={(loansOverTime || []) as any[]}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="month" tickFormatter={(v: any) => formatMonth(String(v))} fontSize={12} />
-              <YAxis fontSize={12} />
-              <Tooltip labelFormatter={(v: any) => formatTooltipDate(String(v))} />
-              <Area type="monotone" dataKey="count" stroke="#10B981" fill="#10B981" fillOpacity={0.2} name="Loans" />
+              <XAxis dataKey="month" tickFormatter={(v: any) => formatMonth(String(v))} fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} labelFormatter={(v: any) => formatTooltipDate(String(v))} />
+              <Area type="monotone" dataKey="count" stroke="#0E9F7A" fill="#0E9F7A" fillOpacity={0.18} strokeWidth={2} name="Loans" />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -107,10 +117,10 @@ export function AdminDashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={(repaymentsOverTime || []) as any[]}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="month" tickFormatter={(v: any) => formatMonth(String(v))} fontSize={12} />
-              <YAxis fontSize={12} />
-              <Tooltip labelFormatter={(v: any) => formatTooltipDate(String(v))} formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Amount']} />
-              <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} name="Amount" />
+              <XAxis dataKey="month" tickFormatter={(v: any) => formatMonth(String(v))} fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} labelFormatter={(v: any) => formatTooltipDate(String(v))} formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Amount']} />
+              <Line type="monotone" dataKey="total" stroke="#3B82F6" strokeWidth={2} name="Amount" dot={false} activeDot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -141,11 +151,11 @@ export function AdminDashboard() {
         <ChartCard title="Application Status Distribution">
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={(applicationDist || []) as any[]}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="status" fontSize={12} />
-              <YAxis fontSize={12} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#10B981" radius={[4, 4, 0, 0]} name="Applications" />
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" vertical={false} />
+              <XAxis dataKey="status" fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="count" fill="#0E9F7A" radius={[4, 4, 0, 0]} name="Applications" />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -154,9 +164,9 @@ export function AdminDashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={(defaulterDist || []) as any[]} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis type="number" fontSize={12} />
-              <YAxis dataKey="classification" type="category" fontSize={12} width={120} />
-              <Tooltip />
+              <XAxis type="number" fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis dataKey="classification" type="category" fontSize={12} width={120} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="count" radius={[0, 4, 4, 0]} name="Members">
                 {(defaulterDist || []).map((entry: any, index: number) => (
                   <Cell
@@ -177,9 +187,9 @@ export function AdminDashboard() {
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={(outstandingAmounts || []) as any[]}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="loan_type__name" fontSize={12} />
-              <YAxis fontSize={12} tickFormatter={(v: any) => `K${(Number(v) / 1000).toFixed(0)}k`} />
-              <Tooltip formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Outstanding']} />
+              <XAxis dataKey="loan_type__name" fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis fontSize={12} tickFormatter={(v: any) => `K${(Number(v) / 1000).toFixed(0)}k`} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Outstanding']} />
               <Bar dataKey="total" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Outstanding" />
             </BarChart>
           </ResponsiveContainer>
