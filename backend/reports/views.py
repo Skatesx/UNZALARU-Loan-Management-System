@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from members.models import Member
-from users.permissions import IsAdminUser
+from users.permissions import IsAdminUser, IsStaffUser
 
 from .services import DashboardService, ReportExportService
 from .serializers import (
@@ -20,7 +20,7 @@ from .serializers import (
 class AdminDashboardSummaryView(APIView):
     """Admin dashboard summary endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
         data = DashboardService.get_admin_summary()
@@ -30,7 +30,7 @@ class AdminDashboardSummaryView(APIView):
 class AdminDashboardChartsView(APIView):
     """Admin dashboard charts data endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request, chart_type):
         from loans.models import Loan, LoanApplication
@@ -106,7 +106,7 @@ class MemberDashboardView(APIView):
 class LoanReportView(APIView):
     """Loan report endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
         from loans.models import Loan
@@ -154,7 +154,7 @@ class LoanReportView(APIView):
 class RepaymentReportView(APIView):
     """Repayment report endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
         from repayments.models import Repayment
@@ -195,7 +195,7 @@ class RepaymentReportView(APIView):
 class DefaulterReportView(APIView):
     """Defaulter report endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
         from defaulters.models import DefaulterStatus
@@ -226,7 +226,7 @@ class DefaulterReportView(APIView):
 class EligibilityReportView(APIView):
     """Eligibility report endpoint."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
         from eligibility.models import EligibilityScore
@@ -254,7 +254,7 @@ class EligibilityReportView(APIView):
 class LoanReportExportView(APIView):
     """Export loan report as CSV or PDF."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request, format_type):
         from loans.models import Loan
@@ -308,7 +308,7 @@ class LoanReportExportView(APIView):
 class RepaymentReportExportView(APIView):
     """Export repayment report as CSV or PDF."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
 
     def get(self, request, format_type):
         from repayments.models import Repayment

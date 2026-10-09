@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from audit.services import AuditService
 from notifications.services import NotificationService
-from users.permissions import IsAdminUser
+from users.permissions import IsAdminUser, IsStaffUser
 from users.models import User
 
 from .filters import MemberFilter
@@ -67,7 +67,10 @@ class MemberSignupView(generics.CreateAPIView):
 class MemberViewSet(viewsets.ModelViewSet):
     """
     Member management endpoints.
-    Admin can manage all members.
+
+    Admins manage members fully (create, update, approve/reject, delete).
+    Supervisors have read access plus income verification, which feeds the
+    loan approval workflow; lifecycle actions remain admin-only.
     """
 
     permission_classes = [IsAdminUser]
@@ -79,9 +82,12 @@ class MemberViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'monthly_income']
 
     def get_permissions(self):
-        # Members may access their own profile endpoints; everything else is admin-only.
+        # Members may access their own profile endpoints; everything else is staff.
         if self.action in ('me', 'update_me'):
             return [IsAuthenticated()]
+        if self.action in ('list', 'retrieve', 'loan_history', 'repayment_history',
+                           'eligibility_history', 'defaulter_history', 'verify_income'):
+            return [IsStaffUser()]
         return [permission() for permission in self.permission_classes]
 
     def get_queryset(self):

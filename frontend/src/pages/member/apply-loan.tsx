@@ -28,7 +28,8 @@ export function ApplyLoan() {
     handleSubmit,
     watch,
     setValue,
-    trigger,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<LoanApplicationFormData>({
     resolver: zodResolver(loanApplicationSchema),
@@ -42,7 +43,28 @@ export function ApplyLoan() {
 
   const amount = watch('requested_amount')
   const duration = watch('duration_months')
+  const purpose = watch('purpose')
   const selectedType = Array.isArray(loanTypes) ? loanTypes.find((t: any) => t.id === selectedTypeId) : null
+
+  // Validation failures must never be silent: show a toast naming the problem
+  // and jump back to the step where the user can fix it. (Step 3 renders no
+  // inputs, so without this a failed submit looked like a dead button.)
+  const onInvalid = (errs: Record<string, { message?: string }>) => {
+    const order: Array<[keyof LoanApplicationFormData, number]> = [
+      ['loan_type', 1],
+      ['requested_amount', 2],
+      ['duration_months', 2],
+      ['purpose', 2],
+    ]
+    const first = order.find(([key]) => errs[key])
+    toast.error(
+      first?.[0] && errs[first[0]]?.message
+        ? errs[first[0]].message!
+        : 'Please complete all fields before submitting',
+      { duration: 8000 }
+    )
+    if (first) setStep(first[1])
+  }
 
   const estimatedMonthly = selectedType && amount && duration
     ? (amount * (1 + Number(selectedType.interest_rate) / 100 * duration / 12)) / duration
@@ -57,15 +79,13 @@ export function ApplyLoan() {
       await createApplication.mutateAsync({ ...data, loan_type: selectedTypeId })
       toast.success('Loan application submitted!')
       navigate('/member/my-applications')
-    } catch (err: any) {
-      // Surface the API's reason (e.g. pending membership, duplicate application)
-      const data = err?.response?.data
-      const message =
-        data?.error ||
-        data?.detail ||
-        (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : null) ||
-        'Failed to submit application'
-      toast.error(message)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      toast.error(
+        axiosError.response?.data?.error ||
+        'Failed to submit application. Please check your details and try again.',
+        { duration: 8000 }
+      )
     }
   }
 
@@ -120,7 +140,10 @@ export function ApplyLoan() {
                   }`}
                   onClick={() => {
                     setSelectedTypeId(lt.id)
-                    setValue('loan_type', lt.id, { shouldValidate: true })
+                    // Keep React Hook Form state in sync — the hidden-input
+                    // approach left the form value at 0 and silently blocked
+                    // final submission.
+                    setValue('loan_type', lt.id, { shouldValidate: false })
                   }}
                 >
                   <CardContent className="p-5">
@@ -217,7 +240,7 @@ export function ApplyLoan() {
                 </div>
                 <div className="border-t pt-3">
                   <p className="text-xs text-muted-foreground mb-1">Purpose</p>
-                  <p className="text-sm">{watch('purpose')}</p>
+                  <p className="text-sm">{purpose || '—'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -242,9 +265,40 @@ export function ApplyLoan() {
                   toast.error('Please select a loan type')
                   return
                 }
-                if (step === 2) {
-                  goToReview()
-                  return
+                if (step === 2 && selectedType) {
+                  // Validate loan-type limits before advancing so users see
+                  // inline errors instead of a backend rejection later.
+                  const amt = Number(amount)
+                  const dur = Number(duration)
+                  if (!amt || amt <= 0) {
+                    setError('requested_amount', { message: 'Amount must be positive' })
+                    return
+                  }
+                  if (amt < Number(selectedType.min_amount) || amt > Number(selectedType.max_amount)) {
+                    setError('requested_amount', {
+                      message: `Amount must be between K${Number(selectedType.min_amount).toLocaleString()} and K${Number(selectedType.max_amount).toLocaleString()}`,
+                    })
+                    return
+                  }
+                  if (!dur || dur < 1) {
+                    setError('duration_months', { message: 'Duration must be at least 1 month' })
+                    return
+                  }
+                  if (dur < selectedType.min_duration_months || dur > selectedType.max_duration_months) {
+                    setError('duration_months', {
+                      message: `Duration must be between ${selectedType.min_duration_months} and ${selectedType.max_duration_months} months`,
+                    })
+                    return
+                  }
+                  if (!purpose || purpose.trim().length < 10) {
+                    setError('purpose', {
+                      message: 'Please describe the purpose (at least 10 characters)',
+                    })
+                    return
+                  }
+                  clearErrors('requested_amount')
+                  clearErrors('duration_months')
+                  clearErrors('purpose')
                 }
                 setStep(step + 1)
               }}

@@ -45,6 +45,23 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Admin user already exists')
 
+        # Create supervisor user
+        supervisor_user, created = User.objects.get_or_create(
+            email='supervisor@unzalaru.com',
+            defaults={
+                'username': 'supervisor',
+                'first_name': 'Grace',
+                'last_name': 'Banda',
+                'role': 'SUPERVISOR',
+            }
+        )
+        if created:
+            supervisor_user.set_password('password123')
+            supervisor_user.save()
+            self.stdout.write(self.style.SUCCESS('Created supervisor user: supervisor@unzalaru.com'))
+        else:
+            self.stdout.write('Supervisor user already exists')
+
         # Create loan types
         loan_types = []
         loan_type_data = [

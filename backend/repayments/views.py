@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from loans.models import Loan
 from members.models import Member
-from users.permissions import IsAdminUser
+from users.permissions import IsAdminUser, IsStaffUser
 
 from .models import Repayment, RepaymentSchedule
 from .serializers import (
@@ -16,9 +16,9 @@ from .services import RepaymentService
 
 
 class RepaymentViewSet(viewsets.ModelViewSet):
-    """Repayment management endpoints."""
+    """Repayment management endpoints (admin and supervisor)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
     serializer_class = RepaymentSerializer
     # Repayments are a ledger: editing or deleting one would leave the loan
     # balance and installment statuses out of sync, so only create/read.
@@ -96,7 +96,7 @@ class RepaymentScheduleListView(generics.ListAPIView):
         loan_id = self.kwargs.get('loan_id')
         user = self.request.user
 
-        if user.role == 'ADMIN':
+        if IsStaffUser().has_permission(self.request, self):
             return RepaymentSchedule.objects.filter(
                 loan__loan_id=loan_id
             ).select_related('loan')

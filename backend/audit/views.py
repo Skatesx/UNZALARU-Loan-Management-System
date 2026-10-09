@@ -1,7 +1,7 @@
 import django_filters
 from rest_framework import viewsets
 
-from users.permissions import IsAdminUser
+from users.permissions import IsStaffUser
 
 from .models import AuditLog
 from .serializers import AuditLogSerializer
@@ -22,9 +22,9 @@ class AuditLogFilter(django_filters.FilterSet):
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
-    """Audit log endpoints (admin only)."""
+    """Audit log endpoints (admin and supervisor)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
     queryset = AuditLog.objects.select_related('user').all()
     serializer_class = AuditLogSerializer
     filterset_class = AuditLogFilter

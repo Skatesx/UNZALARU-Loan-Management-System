@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from users.permissions import IsAdminUser
+from users.permissions import IsStaffUser
 
 from .models import DefaulterStatus
 from .serializers import DefaulterStatusListSerializer, DefaulterStatusSerializer
@@ -33,9 +33,9 @@ class DefaulterFilter(django_filters.FilterSet):
 
 
 class DefaulterViewSet(viewsets.ReadOnlyModelViewSet):
-    """Defaulter management endpoints (admin only)."""
+    """Defaulter management endpoints (admin and supervisor)."""
 
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffUser]
     filterset_class = DefaulterFilter
     search_fields = ['member__member_id', 'member__user__first_name', 'member__user__last_name']
     ordering_fields = ['days_overdue', 'classification', 'last_checked']

@@ -4,9 +4,10 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from 'sonner'
 import { AuthProvider } from '@/context/auth-context'
 import { ThemeProvider } from '@/components/ui/theme-provider'
-import { AuthGuard, AdminGuard, MemberGuard, GuestGuard } from '@/routes/guard'
+import { RoleGuard, GuestGuard } from '@/routes/guard'
 import { AdminLayout } from '@/components/layout/admin-layout'
 import { MemberLayout } from '@/components/layout/member-layout'
+import { SupervisorLayout } from '@/components/layout/supervisor-layout'
 import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
@@ -82,13 +83,13 @@ function App() {
                   }
                 />
 
-                {/* Admin routes */}
+                {/* Admin routes (ADMIN only) */}
                 <Route
                   path="/admin"
                   element={
-                    <AdminGuard>
+                    <RoleGuard roles={['ADMIN']}>
                       <AdminLayout />
-                    </AdminGuard>
+                    </RoleGuard>
                   }
                 >
                   <Route index element={<Navigate to="dashboard" replace />} />
@@ -112,13 +113,40 @@ function App() {
                   <Route path="notifications" element={<AdminNotificationList />} />
                 </Route>
 
-                {/* Member routes */}
+                {/* Supervisor routes (SUPERVISOR only) */}
+                <Route
+                  path="/supervisor"
+                  element={
+                    <RoleGuard roles={['SUPERVISOR']}>
+                      <SupervisorLayout />
+                    </RoleGuard>
+                  }
+                >
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="members" element={<MemberList />} />
+                  <Route path="members/:id" element={<MemberDetail />} />
+                  <Route path="loans" element={<LoanList />} />
+                  <Route path="loans/:id" element={<AdminLoanDetail />} />
+                  <Route path="loans/applications" element={<ApplicationList />} />
+                  <Route path="loans/applications/:id" element={<ApplicationDetail />} />
+                  <Route path="repayments" element={<RepaymentList />} />
+                  <Route path="defaulters" element={<DefaulterList />} />
+                  <Route path="reports/loans" element={<LoanReport />} />
+                  <Route path="reports/repayments" element={<RepaymentReport />} />
+                  <Route path="reports/defaulters" element={<DefaulterReport />} />
+                  <Route path="reports/eligibility" element={<EligibilityReport />} />
+                  <Route path="audit" element={<AuditLog />} />
+                  <Route path="notifications" element={<AdminNotificationList />} />
+                </Route>
+
+                {/* Member routes (MEMBER only) */}
                 <Route
                   path="/member"
                   element={
-                    <MemberGuard>
+                    <RoleGuard roles={['MEMBER']}>
                       <MemberLayout />
-                    </MemberGuard>
+                    </RoleGuard>
                   }
                 >
                   <Route index element={<Navigate to="dashboard" replace />} />

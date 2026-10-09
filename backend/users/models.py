@@ -32,6 +32,7 @@ class User(AbstractUser):
 
     ROLE_CHOICES = [
         ('MEMBER', 'Member'),
+        ('SUPERVISOR', 'Supervisor'),
         ('ADMIN', 'Administrator'),
     ]
 
@@ -56,6 +57,15 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return self.role == 'ADMIN'
+
+    @property
+    def is_supervisor(self):
+        return self.role == 'SUPERVISOR'
+
+    @property
+    def is_staff_role(self):
+        """Union-staff role: admins and supervisors manage lending operations."""
+        return self.role in ('ADMIN', 'SUPERVISOR')
 
     @property
     def is_member(self):

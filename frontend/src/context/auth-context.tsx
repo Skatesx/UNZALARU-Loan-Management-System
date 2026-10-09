@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
-import type { User } from '@/types/auth'
+import type { User, UserRole } from '@/types/auth'
 import { authApi } from '@/api/auth'
 import {
   setTokens,
@@ -26,6 +26,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   isAdmin: boolean
+  isSupervisor: boolean
+  isStaff: boolean
   isMember: boolean
   login: (email: string, password: string) => Promise<User>
   logout: () => Promise<void>
@@ -51,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: payload.email.split('@')[0],
     first_name: payload.first_name,
     last_name: payload.last_name,
-    role: payload.role as 'MEMBER' | 'ADMIN',
+    role: payload.role as UserRole,
     is_active: true,
     created_at: '',
     updated_at: '',
@@ -107,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'ADMIN',
+    isSupervisor: user?.role === 'SUPERVISOR',
+    isStaff: user?.role === 'ADMIN' || user?.role === 'SUPERVISOR',
     isMember: user?.role === 'MEMBER',
     login,
     logout,

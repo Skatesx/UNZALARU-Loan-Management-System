@@ -1,4 +1,5 @@
 import { useAdminDashboardSummary, useAdminDashboardChart } from '@/hooks/use-dashboard'
+import { useAuth } from '@/hooks/use-auth'
 import { StatCard } from '@/components/dashboard/stat-card'
 import { ChartCard } from '@/components/dashboard/chart-card'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -9,7 +10,7 @@ import {
   FileText,
   CheckCircle,
   Activity,
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertTriangle,
   AlertCircle,
@@ -47,6 +48,7 @@ const tooltipStyle = {
 }
 
 export function AdminDashboard() {
+  const { isSupervisor } = useAuth()
   const { data: summary, isLoading, error, refetch } = useAdminDashboardSummary()
   const { data: loansOverTime } = useAdminDashboardChart('loans-over-time')
   const { data: repaymentsOverTime } = useAdminDashboardChart('repayments-over-time')
@@ -79,7 +81,9 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          {isSupervisor ? 'Supervisor Dashboard' : 'Admin Dashboard'}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Overview of the UNZALARU loan management system
         </p>
@@ -89,7 +93,7 @@ export function AdminDashboard() {
         <StatCard title="Total Members" value={formatNumber(summary?.total_members || 0)} icon={<Users className="w-5 h-5" />} tone="brand" />
         <StatCard title="Pending Applications" value={formatNumber(summary?.pending_applications || 0)} icon={<FileText className="w-5 h-5" />} tone="info" />
         <StatCard title="Active Loans" value={formatNumber(summary?.active_loans || 0)} icon={<Activity className="w-5 h-5" />} tone="brand" />
-        <StatCard title="Total Loaned" value={formatCurrency(summary?.total_amount_loaned || 0)} icon={<DollarSign className="w-5 h-5" />} tone="brand" />
+        <StatCard title="Total Loaned" value={formatCurrency(summary?.total_amount_loaned || 0)} icon={<Banknote className="w-5 h-5" />} tone="brand" />
         <StatCard title="Total Repaid" value={formatCurrency(summary?.total_amount_repaid || 0)} icon={<TrendingUp className="w-5 h-5" />} tone="info" />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
