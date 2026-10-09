@@ -27,6 +27,9 @@ export function ApplyLoan() {
     register,
     handleSubmit,
     watch,
+    setValue,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<LoanApplicationFormData>({
     resolver: zodResolver(loanApplicationSchema),
@@ -40,7 +43,28 @@ export function ApplyLoan() {
 
   const amount = watch('requested_amount')
   const duration = watch('duration_months')
+  const purpose = watch('purpose')
   const selectedType = Array.isArray(loanTypes) ? loanTypes.find((t: any) => t.id === selectedTypeId) : null
+
+  // Validation failures must never be silent: show a toast naming the problem
+  // and jump back to the step where the user can fix it. (Step 3 renders no
+  // inputs, so without this a failed submit looked like a dead button.)
+  const onInvalid = (errs: Record<string, { message?: string }>) => {
+    const order: Array<[keyof LoanApplicationFormData, number]> = [
+      ['loan_type', 1],
+      ['requested_amount', 2],
+      ['duration_months', 2],
+      ['purpose', 2],
+    ]
+    const first = order.find(([key]) => errs[key])
+    toast.error(
+      first?.[0] && errs[first[0]]?.message
+        ? errs[first[0]].message!
+        : 'Please complete all fields before submitting',
+      { duration: 8000 }
+    )
+    if (first) setStep(first[1])
+  }
 
   const estimatedMonthly = selectedType && amount && duration
     ? (amount * (1 + Number(selectedType.interest_rate) / 100 * duration / 12)) / duration
@@ -55,8 +79,13 @@ export function ApplyLoan() {
       await createApplication.mutateAsync({ ...data, loan_type: selectedTypeId })
       toast.success('Loan application submitted!')
       navigate('/member/my-applications')
-    } catch {
-      toast.error('Failed to submit application')
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      toast.error(
+        axiosError.response?.data?.error ||
+        'Failed to submit application. Please check your details and try again.',
+        { duration: 8000 }
+      )
     }
   }
 
@@ -83,7 +112,7 @@ export function ApplyLoan() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
         {/* Step 1: Select Loan Type */}
         {step === 1 && (
           <div className="space-y-4">
@@ -97,7 +126,13 @@ export function ApplyLoan() {
                       ? 'ring-2 ring-emerald-500 border-emerald-500'
                       : 'hover:border-input'
                   }`}
-                  onClick={() => setSelectedTypeId(lt.id)}
+                  onClick={() => {
+                    setSelectedTypeId(lt.id)
+                    // Keep React Hook Form state in sync — the hidden-input
+                    // approach left the form value at 0 and silently blocked
+                    // final submission.
+                    setValue('loan_type', lt.id, { shouldValidate: false })
+                  }}
                 >
                   <CardContent className="p-5">
                     <h3 className="font-semibold">{lt.name}</h3>
@@ -127,7 +162,6 @@ export function ApplyLoan() {
         {step === 2 && (
           <div className="max-w-lg mx-auto space-y-4">
             <h2 className="text-lg font-medium text-center mb-6">Loan Details</h2>
-            <input type="hidden" {...register('loan_type')} value={selectedTypeId || 0} />
             <div className="space-y-2">
               <Label>Requested Amount (K)</Label>
               <Input type="number" step="0.01" {...register('requested_amount')} />
@@ -194,7 +228,7 @@ export function ApplyLoan() {
                 </div>
                 <div className="border-t pt-3">
                   <p className="text-xs text-muted-foreground mb-1">Purpose</p>
-                  <p className="text-sm">{watch('purpose')}</p>
+                  <p className="text-sm">{purpose || '—'}</p>
                 </div>
               </CardContent>
             </Card>
@@ -215,6 +249,41 @@ export function ApplyLoan() {
                 if (step === 1 && !selectedTypeId) {
                   toast.error('Please select a loan type')
                   return
+                }
+                if (step === 2 && selectedType) {
+                  // Validate loan-type limits before advancing so users see
+                  // inline errors instead of a backend rejection later.
+                  const amt = Number(amount)
+                  const dur = Number(duration)
+                  if (!amt || amt <= 0) {
+                    setError('requested_amount', { message: 'Amount must be positive' })
+                    return
+                  }
+                  if (amt < Number(selectedType.min_amount) || amt > Number(selectedType.max_amount)) {
+                    setError('requested_amount', {
+                      message: `Amount must be between K${Number(selectedType.min_amount).toLocaleString()} and K${Number(selectedType.max_amount).toLocaleString()}`,
+                    })
+                    return
+                  }
+                  if (!dur || dur < 1) {
+                    setError('duration_months', { message: 'Duration must be at least 1 month' })
+                    return
+                  }
+                  if (dur < selectedType.min_duration_months || dur > selectedType.max_duration_months) {
+                    setError('duration_months', {
+                      message: `Duration must be between ${selectedType.min_duration_months} and ${selectedType.max_duration_months} months`,
+                    })
+                    return
+                  }
+                  if (!purpose || purpose.trim().length < 10) {
+                    setError('purpose', {
+                      message: 'Please describe the purpose (at least 10 characters)',
+                    })
+                    return
+                  }
+                  clearErrors('requested_amount')
+                  clearErrors('duration_months')
+                  clearErrors('purpose')
                 }
                 setStep(step + 1)
               }}

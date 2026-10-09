@@ -10,7 +10,7 @@
    Light: crisp white surfaces on a cool gray canvas, deep emerald brand.
    Dark: layered slate-navy surfaces with a brighter emerald accent.
 --------------------------------------------------------------------------- */
-@theme inline {
+@theme {
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-heading: var(--font-sans);
 
@@ -148,5 +148,185 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Motion system — entrances, shimmer, micro-interactions.
+   All animations are paired with the reduced-motion guard above.
+--------------------------------------------------------------------------- */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes side-fade {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes soft-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-primary) 35%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12px, -18px) scale(1.04);
+  }
+}
+
+@utility animate-rise {
+  animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}
+
+@utility animate-side-fade {
+  animation: side-fade 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-drawer-in {
+  animation: drawer-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility animate-pop {
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Page-level entrance: fade + rise for route content. */
+@utility animate-page {
+  animation: rise-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Shimmer sweep for skeleton loaders. */
+@utility skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in oklch, var(--color-foreground) 7%, transparent) 50%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+}
+
+/* Soft attention ring (e.g. urgent action buttons). */
+@utility pulse-ring {
+  animation: soft-pulse-ring 2.2s ease-out infinite;
+}
+
+/* Slow drifting blob for auth backdrops. */
+@utility animate-float {
+  animation: float 9s ease-in-out infinite;
+}
+
+@utility animate-float-delayed {
+  animation: float 12s ease-in-out 1.5s infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Global data-table polish — applies to every table in the app without
+   per-page edits: soft row hover, staggered row entrance, cleaner headers.
+--------------------------------------------------------------------------- */
+@layer components {
+  table thead th {
+    @apply bg-muted/70;
+    position: relative;
+  }
+
+  table tbody tr {
+    transition: background-color 160ms ease, box-shadow 160ms ease;
+    animation: fade-in 0.35s ease-out both;
+  }
+
+  table tbody tr:hover {
+    background-color: color-mix(in oklch, var(--color-muted) 65%, transparent);
+    box-shadow: inset 2px 0 0 0 var(--color-primary);
+  }
+
+  table tbody tr a,
+  table tbody tr button {
+    transition: color 140ms ease;
+  }
+}
+
+/* Smooth focus glow for form controls. */
+@layer base {
+  input,
+  textarea,
+  select {
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 18%, transparent);
   }
 }

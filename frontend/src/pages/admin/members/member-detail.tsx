@@ -22,10 +22,13 @@ import {
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth, useStaffBase } from '@/hooks/use-auth'
 
 export function MemberDetail() {
   const { id } = useParams<{ id: string }>()
   const memberId = Number(id)
+  const { isAdmin } = useAuth()
+  const staffBase = useStaffBase()
 
   const { data: member, isLoading, error, refetch } = useMember(memberId)
   const { data: loanHistory } = useMemberLoanHistory(memberId)
@@ -195,7 +198,7 @@ export function MemberDetail() {
                     <span className="text-sm text-muted-foreground">Account</span>
                     <StatusBadge status={member.account_status} />
                   </div>
-                  {isPending && (
+                  {isPending && isAdmin && (
                     <div className="border-t pt-3 space-y-2">
                       <p className="text-xs text-amber-600">
                         This member signed up and is awaiting approval.
@@ -267,7 +270,7 @@ export function MemberDetail() {
                         <tr key={loan.id} className="border-b last:border-b-0">
                           <td className="px-3 py-2">
                             <Link
-                              to={`/admin/loans/${loan.id}`}
+                              to={`${staffBase}/loans/${loan.id}`}
                               className="text-primary hover:text-primary/80 font-medium"
                             >
                               {loan.loan_id}
@@ -314,7 +317,7 @@ export function MemberDetail() {
                           <td className="px-3 py-2 font-medium">{repayment.repayment_id}</td>
                           <td className="px-3 py-2">
                             <Link
-                              to={`/admin/loans/${repayment.loan}`}
+                              to={`${staffBase}/loans/${repayment.loan}`}
                               className="text-primary hover:text-primary/80"
                             >
                               {repayment.loan_id}

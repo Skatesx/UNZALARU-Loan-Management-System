@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLoanApplications } from '@/hooks/use-loans'
+import { useStaffBase } from '@/hooks/use-auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatCurrency } from '@/lib/formatters'
 
 export function ApplicationList() {
+  const staffBase = useStaffBase()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
@@ -80,7 +82,7 @@ export function ApplicationList() {
                     >
                       <td className="px-4 py-3">
                         <Link
-                          to={`/admin/loans/applications/${app.id}`}
+                          to={`${staffBase}/loans/applications/${app.id}`}
                           className="text-primary hover:text-primary/80 font-medium"
                         >
                           {app.application_id}

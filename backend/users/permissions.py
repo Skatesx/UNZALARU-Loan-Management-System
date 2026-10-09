@@ -12,6 +12,34 @@ class IsAdminUser(BasePermission):
         )
 
 
+class IsSupervisorUser(BasePermission):
+    """Allow access only to supervisor users."""
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == 'SUPERVISOR'
+        )
+
+
+class IsStaffUser(BasePermission):
+    """Allow access to ADMIN and SUPERVISOR users (union staff).
+
+    Supervisors get day-to-day loan operations rights — reviewing and
+    approving/rejecting applications, recording repayments, monitoring
+    defaulters, viewing reports and audit logs — while system
+    configuration and user/member lifecycle management stay admin-only.
+    """
+
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in ('ADMIN', 'SUPERVISOR')
+        )
+
+
 class IsMemberUser(BasePermission):
     """Allow access only to member users."""
 
@@ -30,7 +58,7 @@ class IsOwnerOrAdmin(BasePermission):
     """
 
     def has_object_permission(self, request, view, obj):
-        if request.user.role == 'ADMIN':
+        if IsStaffUser().has_permission(request, None):
             return True
         # Check if object has direct user reference
         if hasattr(obj, 'user'):
@@ -48,7 +76,7 @@ class IsMemberOwnerOrAdmin(BasePermission):
     """
 
     def has_permission(self, request, view, obj=None):
-        if request.user.role == 'ADMIN':
+        if IsStaffUser().has_permission(request, None):
             return True
         if obj is None:
             return True
@@ -57,7 +85,7 @@ class IsMemberOwnerOrAdmin(BasePermission):
         return False
 
     def has_object_permission(self, request, view, obj):
-        if request.user.role == 'ADMIN':
+        if IsStaffUser().has_permission(request, None):
             return True
         if hasattr(obj, 'user'):
             return obj.user == request.user

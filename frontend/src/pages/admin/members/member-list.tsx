@@ -12,8 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { formatCurrency } from '@/lib/formatters'
 import { BadgeCheck, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth, useStaffBase } from '@/hooks/use-auth'
 
 export function MemberList() {
+  const { isAdmin } = useAuth()
+  const staffBase = useStaffBase()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -41,12 +44,14 @@ export function MemberList() {
         title="Members"
         description={`${totalCount} total members`}
         actions={
-          <Link to="/admin/members/create">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Member
-            </Button>
-          </Link>
+          isAdmin ? (
+            <Link to="/admin/members/create">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Member
+              </Button>
+            </Link>
+          ) : null
         }
       />
 
@@ -107,7 +112,7 @@ export function MemberList() {
                     >
                       <td className="px-4 py-3">
                         <Link
-                          to={`/admin/members/${member.id}`}
+                          to={`${staffBase}/members/${member.id}`}
                           className="text-primary hover:text-primary/80 font-medium"
                         >
                           {member.member_id}
@@ -130,7 +135,7 @@ export function MemberList() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        {member.membership_status === 'PENDING' && (
+                        {isAdmin && member.membership_status === 'PENDING' && (
                           <div className="flex justify-end gap-2">
                             <Button
                               size="sm"

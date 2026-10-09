@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from users.permissions import IsAdminUser, IsOwnerOrAdmin
+from users.permissions import IsAdminUser, IsStaffUser, IsOwnerOrAdmin
 
 from .models import EligibilityRule, EligibilityScore
 from .serializers import (
@@ -31,7 +31,7 @@ class EligibilityScoreViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if IsStaffUser().has_permission(self.request, self):
             return EligibilityScore.objects.select_related(
                 'application', 'application__member', 'application__member__user'
             ).all()

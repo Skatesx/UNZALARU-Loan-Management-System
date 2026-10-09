@@ -16,7 +16,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 export function Header() {
-  const { user, logout, isAdmin } = useAuth()
+  const { user, logout, isAdmin, isSupervisor } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
@@ -27,11 +27,11 @@ export function Header() {
     : '?'
 
   return (
-    <header className="h-16 border-b bg-card flex items-center justify-end px-4 sm:px-6 gap-1.5 shrink-0 sticky top-0 z-30">
+    <header className="h-16 border-b bg-card/80 backdrop-blur-md flex items-center justify-end px-4 sm:px-6 gap-1.5 shrink-0 sticky top-0 z-30">
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted hover:scale-105 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
       >
         {theme === 'light' ? <Moon className="w-[18px] h-[18px]" /> : <Sun className="w-[18px] h-[18px]" />}
@@ -40,12 +40,12 @@ export function Header() {
       {/* Notification bell */}
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted hover:scale-105 active:scale-95 transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ''}`}
         >
           <Bell className="w-[18px] h-[18px]" />
           {unreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-destructive text-destructive-foreground text-[10px] font-semibold rounded-full flex items-center justify-center ring-2 ring-card">
+            <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-destructive text-destructive-foreground text-[10px] font-semibold rounded-full flex items-center justify-center ring-2 ring-card animate-pop">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -104,7 +104,7 @@ export function Header() {
             )}
           </ScrollArea>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="justify-center text-[13px] text-primary cursor-pointer" onClick={() => navigate(isAdmin ? '/admin/notifications' : '/member/notifications')}>
+          <DropdownMenuItem className="justify-center text-[13px] text-primary cursor-pointer" onClick={() => navigate(isAdmin ? '/admin/notifications' : isSupervisor ? '/supervisor/notifications' : '/member/notifications')}>
             <span className="flex items-center gap-1.5">
               <PanelTop className="w-3.5 h-3.5" />
               View all notifications
@@ -117,8 +117,8 @@ export function Header() {
 
       {/* User menu */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 p-1.5 pr-2 rounded-lg hover:bg-muted transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
-          <Avatar className="w-8 h-8">
+        <DropdownMenuTrigger className="flex items-center gap-2 p-1.5 pr-2 rounded-lg hover:bg-muted hover:scale-[1.02] active:scale-[0.98] transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
+          <Avatar className="w-8 h-8 ring-1 ring-foreground/10 transition-shadow group-hover:shadow-sm">
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
               {initials}
             </AvatarFallback>
@@ -141,7 +141,7 @@ export function Header() {
             <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
           </div>
           <DropdownMenuSeparator className="md:hidden" />
-          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(isAdmin ? '/admin/members' : '/member/profile')}>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(isAdmin ? '/admin/members' : isSupervisor ? '/supervisor/members' : '/member/profile')}>
             <User className="w-4 h-4" />
             Profile
           </DropdownMenuItem>

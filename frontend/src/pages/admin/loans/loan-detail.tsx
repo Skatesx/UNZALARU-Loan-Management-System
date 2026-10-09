@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLoan, useLoanSchedule, useLoanRepayments } from '@/hooks/use-loans'
 import { useRecordRepayment } from '@/hooks/use-repayments'
+import { useStaffBase } from '@/hooks/use-auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -26,6 +27,7 @@ import { ArrowLeft, Loader2, HandCoins } from 'lucide-react'
 export function LoanDetail() {
   const { id } = useParams<{ id: string }>()
   const loanId = Number(id)
+  const staffBase = useStaffBase()
 
   const { data: loan, isLoading, error, refetch } = useLoan(loanId)
   const { data: schedule } = useLoanSchedule(loanId)
@@ -78,7 +80,7 @@ export function LoanDetail() {
         actions={
           <div className="flex items-center gap-2">
             <StatusBadge status={loan.status} />
-            <Link to="/admin/loans">
+            <Link to={`${staffBase}/loans`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back

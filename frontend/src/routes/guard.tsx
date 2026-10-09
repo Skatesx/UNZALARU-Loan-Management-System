@@ -1,13 +1,32 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/use-auth'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
+import type { UserRole } from '@/types/auth'
 
-interface AuthGuardProps {
+interface GuardProps {
   children: React.ReactNode
+  roles?: UserRole[]
 }
 
-export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+/** Home route for a given role. */
+export function homeForRole(role?: string): string {
+  switch (role) {
+    case 'ADMIN':
+      return '/admin/dashboard'
+    case 'SUPERVISOR':
+      return '/supervisor/dashboard'
+    default:
+      return '/member/dashboard'
+  }
+}
+
+/**
+ * Role-aware guard. When `roles` is omitted any authenticated user passes.
+ * Authenticated users hitting a route they lack rights for are redirected to
+ * their own home page.
+ */
+export function RoleGuard({ children, roles }: GuardProps) {
+  const { isAuthenticated, user, isLoading } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -22,57 +41,20 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  return <>{children}</>
-}
-
-export function AdminGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth()
-  const location = useLocation()
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSkeleton type="form" />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-
-  if (!isAdmin) {
-    return <Navigate to="/member/dashboard" replace />
+  if (roles && (!user || !roles.includes(user.role))) {
+    return <Navigate to={homeForRole(user?.role)} replace />
   }
 
   return <>{children}</>
 }
 
-export function MemberGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isMember, isLoading } = useAuth()
-  const location = useLocation()
+// Backwards-compatible aliases used across the app.
+export const AuthGuard = RoleGuard
+export const AdminGuard = RoleGuard // AdminLayout passes roles=['ADMIN'] itself
+export const MemberGuard = RoleGuard
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSkeleton type="form" />
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />
-  }
-
-  if (!isMember) {
-    return <Navigate to="/admin/dashboard" replace />
-  }
-
-  return <>{children}</>
-}
-
-export function GuestGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth()
+export function GuestGuard({ children }: GuardProps) {
+  const { isAuthenticated, user, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -83,7 +65,7 @@ export function GuestGuard({ children }: AuthGuardProps) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to={isAdmin ? '/admin/dashboard' : '/member/dashboard'} replace />
+    return <Navigate to={homeForRole(user?.role)} replace />
   }
 
   return <>{children}</>

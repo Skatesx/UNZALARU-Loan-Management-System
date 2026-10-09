@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLoanApplication, useLoanApprovalCriteria, useApproveLoanApplication, useRejectLoanApplication } from '@/hooks/use-loans'
+import { useStaffBase } from '@/hooks/use-auth'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -113,6 +114,7 @@ function CriteriaChecklist({
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>()
   const applicationId = Number(id)
+  const staffBase = useStaffBase()
 
   const { data: application, isLoading, error, refetch } = useLoanApplication(applicationId)
   const approveMutation = useApproveLoanApplication()
@@ -178,7 +180,7 @@ export function ApplicationDetail() {
         actions={
           <div className="flex items-center gap-2">
             <StatusBadge status={application.status} />
-            <Link to="/admin/loans/applications">
+            <Link to={`${staffBase}/loans/applications`}>
               <Button variant="outline" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
@@ -304,7 +306,7 @@ export function ApplicationDetail() {
               <div>
                 <p className="text-xs text-muted-foreground">Name</p>
                 <Link
-                  to={`/admin/members/${application.member?.id}`}
+                  to={`${staffBase}/members/${application.member?.id}`}
                   className="text-sm font-medium text-primary hover:text-primary/80"
                 >
                   {application.member?.full_name}

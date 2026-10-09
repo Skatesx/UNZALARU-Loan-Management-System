@@ -1,10 +1,11 @@
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from members.models import Member
-from users.permissions import IsAdminUser, IsOwnerOrAdmin
+from users.permissions import IsAdminUser, IsStaffUser, IsOwnerOrAdmin
 
 from .models import Loan, LoanApplication, LoanType
 from .serializers import (
@@ -34,7 +35,7 @@ class LoanTypeViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = LoanType.objects.all()
-        if self.request.user.is_authenticated and self.request.user.role != 'ADMIN':
+        if self.request.user.is_authenticated and not IsStaffUser().has_permission(self.request, self):
             queryset = queryset.filter(is_active=True)
         return queryset
 
@@ -43,10 +44,17 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     """Loan application endpoints."""
 
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['status', 'loan_type', 'member']
+    search_fields = [
+        'application_id', 'purpose',
+        'member__member_id', 'member__user__first_name',
+        'member__user__last_name', 'member__user__email',
+    ]
+    ordering_fields = ['application_date', 'requested_amount', 'status']
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if IsStaffUser().has_permission(self.request, self):
             return LoanApplication.objects.select_related(
                 'member', 'member__user', 'loan_type', 'reviewed_by'
             ).all()
@@ -71,26 +79,41 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         return LoanApplicationSerializer
 
     def perform_create(self, serializer):
-        """Create loan application with business logic."""
+        """Create loan application with business logic.
+
+        Business-rule violations raised as ValueError by the service layer
+        (pending membership, amount/duration limits, duplicates, ...) are
+        converted into a 400 response with a helpful message instead of an
+        unhandled 500 error.
+        """
         user = self.request.user
-        member = Member.objects.get(user=user)
+        try:
+            member = Member.objects.get(user=user)
+        except Member.DoesNotExist:
+            raise DRFValidationError(
+                {'error': 'Member profile not found for the signed-in user'}
+            )
+
         loan_type = serializer.validated_data['loan_type']
 
         service = LoanApplicationService()
-        application = service.create_application(
-            member=member,
-            loan_type=loan_type,
-            requested_amount=serializer.validated_data['requested_amount'],
-            duration_months=serializer.validated_data['duration_months'],
-            purpose=serializer.validated_data['purpose'],
-            employment_info=serializer.validated_data.get('current_employment_info', {}),
-            income_info=serializer.validated_data.get('income_info', {}),
-            obligations=serializer.validated_data.get('existing_loan_obligations', []),
-        )
+        try:
+            application = service.create_application(
+                member=member,
+                loan_type=loan_type,
+                requested_amount=serializer.validated_data['requested_amount'],
+                duration_months=serializer.validated_data['duration_months'],
+                purpose=serializer.validated_data['purpose'],
+                employment_info=serializer.validated_data.get('current_employment_info', {}),
+                income_info=serializer.validated_data.get('income_info', {}),
+                obligations=serializer.validated_data.get('existing_loan_obligations', []),
+            )
+        except ValueError as e:
+            raise DRFValidationError({'error': str(e)})
         # Return the created application
         serializer.instance = application
 
-    @action(detail=True, methods=['get'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['get'], permission_classes=[IsStaffUser])
     def criteria(self, request, pk=None):
         """Evaluate approval criteria for an application."""
         application = self.get_object()
@@ -99,7 +122,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         evaluation = evaluate_criteria(application)
         return Response(evaluation)
 
-    @action(detail=True, methods=['put'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['put'], permission_classes=[IsStaffUser])
     def approve(self, request, pk=None):
         """Approve a loan application (optionally overriding failed criteria)."""
         application = self.get_object()
@@ -123,7 +146,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    @action(detail=True, methods=['put'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['put'], permission_classes=[IsStaffUser])
     def reject(self, request, pk=None):
         """Reject a loan application."""
         application = self.get_object()
@@ -151,7 +174,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         application = self.get_object()
 
         # Check if user owns this application
-        if request.user.role != 'ADMIN':
+        if not IsStaffUser().has_permission(request, self):
             try:
                 member = Member.objects.get(user=request.user)
                 if application.member != member:
@@ -183,10 +206,17 @@ class LoanViewSet(viewsets.ReadOnlyModelViewSet):
     """Loan listing and detail endpoints."""
 
     permission_classes = [IsAuthenticated]
+    filterset_fields = ['status', 'loan_type', 'member']
+    search_fields = [
+        'loan_id',
+        'member__member_id', 'member__user__first_name',
+        'member__user__last_name', 'member__user__email',
+    ]
+    ordering_fields = ['date_approved', 'principal', 'status']
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'ADMIN':
+        if IsStaffUser().has_permission(self.request, self):
             return Loan.objects.select_related(
                 'member', 'member__user', 'loan_type', 'approved_by'
             ).all()
