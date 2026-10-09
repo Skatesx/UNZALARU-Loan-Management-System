@@ -165,6 +165,20 @@ class TestLoanEndpoints:
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
 
+    def test_duplicate_application_returns_400_with_message(self, auth_client_member, member, loan_type, eligibility_rules):
+        """Business-rule failures are a 400 with a readable error, not a 500."""
+        payload = {
+            'loan_type': loan_type.id,
+            'requested_amount': 5000,
+            'duration_months': 6,
+            'purpose': 'Test loan',
+        }
+        first = auth_client_member.post('/api/loan-applications/', payload, content_type='application/json')
+        assert first.status_code == status.HTTP_201_CREATED
+        second = auth_client_member.post('/api/loan-applications/', payload, content_type='application/json')
+        assert second.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'already have a pending' in second.json()['error']
+
     def test_member_can_list_own_applications(self, auth_client_member, member, loan_type, eligibility_rules):
         """Member can list their own applications."""
         service = LoanApplicationService()

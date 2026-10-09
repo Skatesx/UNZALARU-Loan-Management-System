@@ -27,6 +27,8 @@ export function ApplyLoan() {
     register,
     handleSubmit,
     watch,
+    setValue,
+    trigger,
     formState: { errors },
   } = useForm<LoanApplicationFormData>({
     resolver: zodResolver(loanApplicationSchema),
@@ -55,9 +57,28 @@ export function ApplyLoan() {
       await createApplication.mutateAsync({ ...data, loan_type: selectedTypeId })
       toast.success('Loan application submitted!')
       navigate('/member/my-applications')
-    } catch {
-      toast.error('Failed to submit application')
+    } catch (err: any) {
+      // Surface the API's reason (e.g. pending membership, duplicate application)
+      const data = err?.response?.data
+      const message =
+        data?.error ||
+        data?.detail ||
+        (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : null) ||
+        'Failed to submit application'
+      toast.error(message)
     }
+  }
+
+  // Validation errors belong to fields on earlier steps, so show them as a
+  // toast instead of failing silently on the review step.
+  const onInvalid = (formErrors: typeof errors) => {
+    const first = Object.values(formErrors)[0]
+    toast.error(first?.message || 'Please check the application details')
+  }
+
+  const goToReview = async () => {
+    const valid = await trigger(['requested_amount', 'duration_months', 'purpose'])
+    if (valid) setStep(3)
   }
 
   if (loadingTypes) return <LoadingSkeleton type="form" />
@@ -83,7 +104,7 @@ export function ApplyLoan() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
         {/* Step 1: Select Loan Type */}
         {step === 1 && (
           <div className="space-y-4">
@@ -97,7 +118,10 @@ export function ApplyLoan() {
                       ? 'ring-2 ring-emerald-500 border-emerald-500'
                       : 'hover:border-input'
                   }`}
-                  onClick={() => setSelectedTypeId(lt.id)}
+                  onClick={() => {
+                    setSelectedTypeId(lt.id)
+                    setValue('loan_type', lt.id, { shouldValidate: true })
+                  }}
                 >
                   <CardContent className="p-5">
                     <h3 className="font-semibold">{lt.name}</h3>
@@ -127,7 +151,6 @@ export function ApplyLoan() {
         {step === 2 && (
           <div className="max-w-lg mx-auto space-y-4">
             <h2 className="text-lg font-medium text-center mb-6">Loan Details</h2>
-            <input type="hidden" {...register('loan_type')} value={selectedTypeId || 0} />
             <div className="space-y-2">
               <Label>Requested Amount (K)</Label>
               <Input type="number" step="0.01" {...register('requested_amount')} />
@@ -182,7 +205,7 @@ export function ApplyLoan() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">{formatCurrency(amount || 0)}</span>
+                  <span className="font-medium">{formatCurrency(Number(amount) || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duration</span>
@@ -208,12 +231,19 @@ export function ApplyLoan() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Previous
             </Button>
           )}
+          {/* Distinct keys stop React reusing the Next button as the Submit
+              button, which would turn the click on Next into a form submit */}
           {step < 3 ? (
             <Button
+              key="next"
               type="button"
               onClick={() => {
                 if (step === 1 && !selectedTypeId) {
                   toast.error('Please select a loan type')
+                  return
+                }
+                if (step === 2) {
+                  goToReview()
                   return
                 }
                 setStep(step + 1)
@@ -222,7 +252,7 @@ export function ApplyLoan() {
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button type="submit" disabled={createApplication.isPending}>
+            <Button key="submit" type="submit" disabled={createApplication.isPending}>
               {createApplication.isPending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</>
               ) : (
