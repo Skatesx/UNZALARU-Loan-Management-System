@@ -61,6 +61,12 @@ class DefaulterDetectionService:
         """Update defaulter status for a specific loan."""
         from repayments.models import RepaymentSchedule
 
+        # Installments that have since been paid are no longer overdue; without
+        # this, a member stays classified as a defaulter forever after catching up.
+        DefaulterStatus.objects.filter(
+            loan=loan, schedule__payment_status='PAID'
+        ).update(days_overdue=0, classification='CURRENT')
+
         outstanding = RepaymentSchedule.objects.filter(
             loan=loan,
             payment_status__in=['PENDING', 'PARTIALLY_PAID', 'OVERDUE']

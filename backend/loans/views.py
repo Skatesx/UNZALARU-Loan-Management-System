@@ -1,5 +1,6 @@
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -89,6 +90,19 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         )
         # Return the created application
         serializer.instance = application
+
+    # Applications change only through the approve/reject/cancel actions.
+    # Generic edit/delete would let a member alter an application after it was
+    # scored (skipping the amount/duration checks) or delete an approved one,
+    # which cascades to the loan and its repayment schedule.
+    def update(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
+
+    def partial_update(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
+
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
 
     @action(detail=True, methods=['get'], permission_classes=[IsAdminUser])
     def criteria(self, request, pk=None):

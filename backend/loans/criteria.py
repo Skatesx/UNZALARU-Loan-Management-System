@@ -49,7 +49,12 @@ def _worst_defaulter_classification(member):
     order = ['CURRENT', 'AT_RISK', 'DEFAULTER', 'SEVERE_DEFAULTER']
     worst_idx = -1
     worst = None
-    for status in DefaulterStatus.objects.filter(member=member):
+    current = DefaulterStatus.objects.filter(
+        member=member,
+        loan__status='ACTIVE',
+        schedule__payment_status__in=['PENDING', 'PARTIALLY_PAID', 'OVERDUE'],
+    )
+    for status in current:
         idx = order.index(status.classification)
         if idx > worst_idx:
             worst_idx = idx

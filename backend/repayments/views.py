@@ -20,6 +20,9 @@ class RepaymentViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAdminUser]
     serializer_class = RepaymentSerializer
+    # Repayments are a ledger: editing or deleting one would leave the loan
+    # balance and installment statuses out of sync, so only create/read.
+    http_method_names = ['get', 'post', 'head', 'options']
     search_fields = ['repayment_id', 'loan__loan_id', 'notes']
     ordering_fields = ['payment_date', 'amount']
 

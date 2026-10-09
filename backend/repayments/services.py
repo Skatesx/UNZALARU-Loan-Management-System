@@ -20,14 +20,20 @@ class RepaymentScheduleService:
         start_date = date.today()
         due_dates = calc_service.generate_installment_dates(start_date, loan.duration_months)
 
+        # The installment is rounded to the cent, so the last installment absorbs
+        # the rounding difference; otherwise the installments don't add up to
+        # total_repayment and the loan can never reach a zero balance.
+        last_amount = loan.total_repayment - loan.monthly_installment * (loan.duration_months - 1)
+
         schedules = []
         for i, due_date in enumerate(due_dates, start=1):
+            amount = last_amount if i == loan.duration_months else loan.monthly_installment
             schedule = RepaymentSchedule(
                 loan=loan,
                 installment_number=i,
                 due_date=due_date,
-                expected_amount=loan.monthly_installment,
-                remaining_amount=loan.monthly_installment,
+                expected_amount=amount,
+                remaining_amount=amount,
                 payment_status='PENDING',
                 days_overdue=0,
             )
@@ -63,6 +69,11 @@ class RepaymentService:
         10. Create audit log entry with payment mode
         """
         from .models import Repayment, RepaymentSchedule
+
+        # Lock the loan row so two payments recorded at once can't both read
+        # the same balance and overwrite each other
+        Loan.objects.select_for_update().get(pk=loan.pk)
+        loan.refresh_from_db()
 
         # Validate loan
         if loan.status != 'ACTIVE':

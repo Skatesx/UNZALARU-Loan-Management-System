@@ -40,16 +40,20 @@ class LoanCalculationService:
 
     @staticmethod
     def generate_installment_dates(start_date, months):
-        """Generate monthly due dates starting from next month."""
+        """Generate monthly due dates starting from next month.
+
+        The day of month is clamped to the last day of shorter months
+        (e.g. a loan approved on 31 Jan is due 28/29 Feb, 31 Mar, 30 Apr).
+        """
+        import calendar
+
         dates = []
-        current = start_date
-        for _ in range(months):
-            if current.month == 12:
-                next_date = current.replace(year=current.year + 1, month=1)
-            else:
-                next_date = current.replace(month=current.month + 1)
-            dates.append(next_date)
-            current = next_date
+        for i in range(1, months + 1):
+            month_index = start_date.month - 1 + i
+            year = start_date.year + month_index // 12
+            month = month_index % 12 + 1
+            day = min(start_date.day, calendar.monthrange(year, month)[1])
+            dates.append(date(year, month, day))
         return dates
 
     def calculate_loan(self, principal, annual_rate, months, interest_method):
@@ -169,9 +173,13 @@ class LoanApplicationService:
         ValueError unless the admin supplies an override_reason, which is
         stored on the application and audit-logged.
         """
-        from loans.models import Loan
+        from loans.models import Loan, LoanApplication
         from notifications.services import NotificationService
         from repayments.services import RepaymentScheduleService
+
+        # Lock the row so two simultaneous approvals can't both pass the status check
+        LoanApplication.objects.select_for_update().get(pk=application.pk)
+        application.refresh_from_db()
 
         if application.status not in ['PENDING', 'UNDER_REVIEW']:
             raise ValueError(f'Cannot approve application with status {application.status}')
