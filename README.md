@@ -11,11 +11,14 @@ Django + DRF backend (`backend/`) and React + TypeScript + Vite frontend (`front
 ```bash
 cd backend
 python3 -m venv .venv
-.venv/bin/pip install -e .          # or: pip install django djangorestframework djangorestframework-simplejwt drf-spectacular django-filter django-cors-headers psycopg2-binary
+.venv/bin/pip install -e .          # or: pip install django djangorestframework djangorestframework-simplejwt drf-spectacular django-filter django-cors-headers "psycopg[binary]" python-decouple reportlab faker pytest pytest-django
+cp .env.example .env                # then edit DATABASE_URL / SECRET_KEY
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py load_seed_data   # demo data + default config
 .venv/bin/python manage.py runserver
 ```
+
+On Windows use `.venv\Scripts\pip` / `.venv\Scripts\python` instead of `.venv/bin/...`, and `copy` instead of `cp`.
 
 Postgres: create a database and user, or adjust `backend/.env` (see `.env.example`).
 
@@ -39,7 +42,7 @@ Set `VITE_API_BASE_URL` if the API is not at `http://localhost:8000/api`.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/python -m pytest tests/ -q   # 67 tests
+cd backend && .venv/bin/python -m pytest tests/ -q   # 73 tests
 cd frontend && npm run build                          # typecheck + build
 ```
 
@@ -86,7 +89,7 @@ Every repayment records a payment mode: `CASH`, `BANK_TRANSFER`, `MOBILE_MONEY`,
 
 ### Membership tracking
 
-Member accounts track `membership_status` (`PENDING` → `ACTIVE`, or `REJECTED`),
+Member accounts track `membership_status` (`PENDING` → `ACTIVE`, or `INACTIVE` when a signup is rejected),
 income verification state, and sign-in/loan activity. The `date_joined` user field
 has been removed from all APIs and UI in line with the updated requirements.
 

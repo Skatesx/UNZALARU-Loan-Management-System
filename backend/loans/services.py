@@ -178,9 +178,13 @@ class LoanApplicationService:
         ValueError unless the admin supplies an override_reason, which is
         stored on the application and audit-logged.
         """
-        from loans.models import Loan
+        from loans.models import Loan, LoanApplication
         from notifications.services import NotificationService
         from repayments.services import RepaymentScheduleService
+
+        # Lock the row so two simultaneous approvals can't both pass the status check
+        LoanApplication.objects.select_for_update().get(pk=application.pk)
+        application.refresh_from_db()
 
         if application.status not in ['PENDING', 'UNDER_REVIEW']:
             raise ValueError(f'Cannot approve application with status {application.status}')

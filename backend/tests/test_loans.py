@@ -53,6 +53,24 @@ class TestLoanCalculation:
         assert dates[1] == date(2026, 3, 15)
         assert dates[2] == date(2026, 4, 15)
 
+    def test_generate_installment_dates_end_of_month(self):
+        """Loans approved on the 31st clamp to shorter months instead of crashing."""
+        from datetime import date
+        service = LoanCalculationService()
+        dates = service.generate_installment_dates(date(2026, 1, 31), 4)
+        assert dates == [
+            date(2026, 2, 28),
+            date(2026, 3, 31),
+            date(2026, 4, 30),
+            date(2026, 5, 31),
+        ]
+
+    def test_generate_installment_dates_across_year(self):
+        from datetime import date
+        service = LoanCalculationService()
+        dates = service.generate_installment_dates(date(2026, 11, 30), 3)
+        assert dates == [date(2026, 12, 30), date(2027, 1, 30), date(2027, 2, 28)]
+
 
 @pytest.mark.django_db
 class TestLoanApplication:
@@ -147,6 +165,20 @@ class TestLoanEndpoints:
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
 
+    def test_duplicate_application_returns_400_with_message(self, auth_client_member, member, loan_type, eligibility_rules):
+        """Business-rule failures are a 400 with a readable error, not a 500."""
+        payload = {
+            'loan_type': loan_type.id,
+            'requested_amount': 5000,
+            'duration_months': 6,
+            'purpose': 'Test loan',
+        }
+        first = auth_client_member.post('/api/loan-applications/', payload, content_type='application/json')
+        assert first.status_code == status.HTTP_201_CREATED
+        second = auth_client_member.post('/api/loan-applications/', payload, content_type='application/json')
+        assert second.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'already have a pending' in second.json()['error']
+
     def test_member_can_list_own_applications(self, auth_client_member, member, loan_type, eligibility_rules):
         """Member can list their own applications."""
         service = LoanApplicationService()
@@ -180,3 +212,23 @@ class TestLoanEndpoints:
             content_type='application/json'
         )
         assert response.status_code == status.HTTP_200_OK
+
+    def test_member_cannot_edit_or_delete_application(self, auth_client_member, member, loan_type, eligibility_rules):
+        """Applications can't be changed through generic PATCH/PUT/DELETE."""
+        service = LoanApplicationService()
+        app = service.create_application(
+            member=member,
+            loan_type=loan_type,
+            requested_amount=Decimal('5000'),
+            duration_months=6,
+            purpose='Test loan',
+        )
+        url = f'/api/loan-applications/{app.id}/'
+        response = auth_client_member.patch(
+            url, {'requested_amount': 999999}, content_type='application/json'
+        )
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        response = auth_client_member.delete(url)
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+        app.refresh_from_db()
+        assert app.requested_amount == Decimal('5000')

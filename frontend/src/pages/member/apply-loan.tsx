@@ -89,6 +89,18 @@ export function ApplyLoan() {
     }
   }
 
+  // Validation errors belong to fields on earlier steps, so show them as a
+  // toast instead of failing silently on the review step.
+  const onInvalid = (formErrors: typeof errors) => {
+    const first = Object.values(formErrors)[0]
+    toast.error(first?.message || 'Please check the application details')
+  }
+
+  const goToReview = async () => {
+    const valid = await trigger(['requested_amount', 'duration_months', 'purpose'])
+    if (valid) setStep(3)
+  }
+
   if (loadingTypes) return <LoadingSkeleton type="form" />
 
   const types = Array.isArray(loanTypes) ? loanTypes : []
@@ -216,7 +228,7 @@ export function ApplyLoan() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">{formatCurrency(amount || 0)}</span>
+                  <span className="font-medium">{formatCurrency(Number(amount) || 0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duration</span>
@@ -242,8 +254,11 @@ export function ApplyLoan() {
               <ArrowLeft className="w-4 h-4 mr-2" /> Previous
             </Button>
           )}
+          {/* Distinct keys stop React reusing the Next button as the Submit
+              button, which would turn the click on Next into a form submit */}
           {step < 3 ? (
             <Button
+              key="next"
               type="button"
               onClick={() => {
                 if (step === 1 && !selectedTypeId) {
@@ -291,7 +306,7 @@ export function ApplyLoan() {
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
-            <Button type="submit" disabled={createApplication.isPending}>
+            <Button key="submit" type="submit" disabled={createApplication.isPending}>
               {createApplication.isPending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting...</>
               ) : (

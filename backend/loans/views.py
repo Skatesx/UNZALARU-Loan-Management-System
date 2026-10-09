@@ -78,6 +78,21 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
             return RejectApplicationSerializer
         return LoanApplicationSerializer
 
+    def create(self, request, *args, **kwargs):
+        """Return business-rule failures as 400s with a readable message."""
+        try:
+            return super().create(request, *args, **kwargs)
+        except Member.DoesNotExist:
+            return Response(
+                {'error': 'Only members can apply for loans'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     def perform_create(self, serializer):
         """Create loan application with business logic.
 

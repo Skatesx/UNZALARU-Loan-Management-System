@@ -67,6 +67,48 @@ class TestRepaymentService:
                 recorded_by=admin_user,
             )
 
+    def test_schedule_adds_up_to_total_repayment(self, admin_user, member, loan_type, eligibility_rules):
+        """Installments sum exactly to total_repayment despite cent rounding."""
+        loan = self._create_approved_loan(member, loan_type, admin_user, eligibility_rules)
+        total = sum(s.expected_amount for s in loan.schedules.all())
+        assert total == loan.total_repayment
+
+    def test_paying_every_installment_completes_loan(self, admin_user, member, loan_type, eligibility_rules):
+        """Paying each installment as scheduled closes the loan with zero balance."""
+        loan = self._create_approved_loan(member, loan_type, admin_user, eligibility_rules)
+        service = RepaymentService()
+        for schedule in loan.schedules.order_by('installment_number'):
+            service.record_payment(
+                loan=loan, amount=schedule.expected_amount, recorded_by=admin_user,
+            )
+        loan.refresh_from_db()
+        assert loan.outstanding_balance == Decimal('0')
+        assert loan.status == 'COMPLETED'
+
+    def test_paying_overdue_installment_clears_defaulter_status(
+        self, admin_user, member, loan_type, eligibility_rules
+    ):
+        """A member who pays their overdue installment is no longer a defaulter."""
+        from datetime import date, timedelta
+        from defaulters.models import DefaulterStatus
+
+        loan = self._create_approved_loan(member, loan_type, admin_user, eligibility_rules)
+        schedule = loan.schedules.order_by('installment_number').first()
+        schedule.due_date = date.today() - timedelta(days=45)
+        schedule.save()
+        DefaulterStatus.objects.create(
+            member=member, loan=loan, schedule=schedule,
+            days_overdue=45, classification='DEFAULTER',
+        )
+
+        RepaymentService().record_payment(
+            loan=loan, amount=schedule.remaining_amount, recorded_by=admin_user,
+        )
+
+        status = DefaulterStatus.objects.get(schedule=schedule)
+        assert status.classification == 'CURRENT'
+        assert status.days_overdue == 0
+
     def test_reject_payment_on_completed_loan(self, admin_user, member, loan_type, eligibility_rules):
         """Payment on completed loan is rejected."""
         loan = self._create_approved_loan(member, loan_type, admin_user, eligibility_rules)
