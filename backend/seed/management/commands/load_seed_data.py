@@ -439,6 +439,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('Loaded seed data successfully!'))
         self.stdout.write('')
         self.stdout.write('Admin login: admin@unzalaru.com / password123')
+        self.stdout.write('Supervisor login: supervisor@unzalaru.com / password123')
         self.stdout.write('Member logins (password123):')
         self.stdout.write('  john.mwansa1@unzalaru.com   (active, with loans)')
         self.stdout.write('  mary.phiri0@unzalaru.com    (active, with loans)')
