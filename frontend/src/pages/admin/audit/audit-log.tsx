@@ -39,11 +39,17 @@ export function AuditLog() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Actions</SelectItem>
+            {/* Values must match the actions the backend logs */}
             <SelectItem value="APPROVED_LOAN">Approved Loan</SelectItem>
             <SelectItem value="REJECTED_LOAN">Rejected Loan</SelectItem>
+            <SelectItem value="OVERRIDDEN_APPROVAL_CRITERIA">Overrode Approval Criteria</SelectItem>
             <SelectItem value="RECORDED_REPAYMENT">Recorded Repayment</SelectItem>
-            <SelectItem value="CREATED_MEMBER">Created Member</SelectItem>
-            <SelectItem value="UPDATED_ELIGIBILITY_RULE">Updated Eligibility Rule</SelectItem>
+            <SelectItem value="MEMBER_SIGNED_UP">Member Signed Up</SelectItem>
+            <SelectItem value="MEMBER_CREATED">Created Member</SelectItem>
+            <SelectItem value="MEMBER_UPDATED">Updated Member</SelectItem>
+            <SelectItem value="MEMBER_APPROVED">Approved Member</SelectItem>
+            <SelectItem value="MEMBER_REJECTED">Rejected Member</SelectItem>
+            <SelectItem value="INCOME_VERIFIED">Verified Income</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -1,6 +1,6 @@
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError as DRFValidationError
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -96,37 +96,39 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create loan application with business logic.
 
-        Business-rule violations raised as ValueError by the service layer
-        (pending membership, amount/duration limits, duplicates, ...) are
-        converted into a 400 response with a helpful message instead of an
-        unhandled 500 error.
+        Business-rule violations (pending membership, amount/duration limits,
+        duplicates, ...) raise ValueError, which create() turns into a 400
+        with the message as a plain string.
         """
-        user = self.request.user
-        try:
-            member = Member.objects.get(user=user)
-        except Member.DoesNotExist:
-            raise DRFValidationError(
-                {'error': 'Member profile not found for the signed-in user'}
-            )
-
+        member = Member.objects.get(user=self.request.user)
         loan_type = serializer.validated_data['loan_type']
 
         service = LoanApplicationService()
-        try:
-            application = service.create_application(
-                member=member,
-                loan_type=loan_type,
-                requested_amount=serializer.validated_data['requested_amount'],
-                duration_months=serializer.validated_data['duration_months'],
-                purpose=serializer.validated_data['purpose'],
-                employment_info=serializer.validated_data.get('current_employment_info', {}),
-                income_info=serializer.validated_data.get('income_info', {}),
-                obligations=serializer.validated_data.get('existing_loan_obligations', []),
-            )
-        except ValueError as e:
-            raise DRFValidationError({'error': str(e)})
+        application = service.create_application(
+            member=member,
+            loan_type=loan_type,
+            requested_amount=serializer.validated_data['requested_amount'],
+            duration_months=serializer.validated_data['duration_months'],
+            purpose=serializer.validated_data['purpose'],
+            employment_info=serializer.validated_data.get('current_employment_info', {}),
+            income_info=serializer.validated_data.get('income_info', {}),
+            obligations=serializer.validated_data.get('existing_loan_obligations', []),
+        )
         # Return the created application
         serializer.instance = application
+
+    # Applications change only through the approve/reject/cancel actions.
+    # Generic edit/delete would let a member alter an application after it was
+    # scored (skipping the amount/duration checks) or delete an approved one,
+    # which cascades to the loan and its repayment schedule.
+    def update(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
+
+    def partial_update(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
+
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed(request.method)
 
     @action(detail=True, methods=['get'], permission_classes=[IsStaffUser])
     def criteria(self, request, pk=None):

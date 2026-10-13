@@ -1,5 +1,5 @@
 import random
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.core.management.base import BaseCommand
@@ -17,11 +17,55 @@ from users.models import User
 PAYMENT_MODES = ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE', 'SALARY_DEDUCTION']
 
 
+PENDING_MEMBER_EMAILS = [
+    'chanda.mwansa@unzalaru.com',
+    'mutale.chewe@unzalaru.com',
+    'bupe.chisanga@unzalaru.com',
+]
+
+
 class Command(BaseCommand):
     help = 'Load seed data for the UNZALARU Loan Management System'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--reset',
+            action='store_true',
+            help=(
+                'Delete existing loan applications, loans, repayments, '
+                'notifications and audit entries, and return the demo pending '
+                'members to PENDING, before loading fresh demo data'
+            ),
+        )
+
+    def reset_demo_data(self):
+        """Remove transactional data so the seed can be loaded again cleanly."""
+        from audit.models import AuditLog
+
+        # Deleting applications cascades to loans, eligibility scores,
+        # repayment schedules, repayments and defaulter statuses.
+        apps_deleted, _ = LoanApplication.objects.all().delete()
+        Notification.objects.all().delete()
+        AuditLog.objects.all().delete()
+        Member.objects.filter(user__email__in=PENDING_MEMBER_EMAILS).update(
+            membership_status='PENDING',
+            account_status='ACTIVE',
+            approved_by=None,
+            approval_date=None,
+            income_verified=False,
+            verified_income=None,
+            income_verified_by=None,
+        )
+        User.objects.filter(email__in=PENDING_MEMBER_EMAILS).update(is_active=True)
+        self.stdout.write(self.style.WARNING(
+            'Reset: removed existing applications, loans, repayments, '
+            'notifications and audit entries'
+        ))
+
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
+        if options['reset']:
+            self.reset_demo_data()
         # Deterministic seed so demo logins (first.lastN@unzalaru.com) are
         # reproducible across runs — see README seed logins.
         random.seed(42)
@@ -307,12 +351,25 @@ class Command(BaseCommand):
             f'Created {len(pending_members)} pending members awaiting approval'
         ))
 
+        # Loans, repayments and notifications are only created once; running
+        # the command again would otherwise duplicate every member's loans.
+        if LoanApplication.objects.exists():
+            self.stdout.write(self.style.WARNING(
+                'Loan data already exists, so no new applications, loans or '
+                'repayments were created. Run with --reset to start over.'
+            ))
+            self.print_logins()
+            return
+
         # Create loan applications and loans
         statuses = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED']
         applications_created = 0
         loans_created = 0
+        today = date.today()
 
         for member in members:
+            # Matches the default approval criteria: one active loan per member
+            has_active_loan = False
             # Each member gets 1-3 applications
             num_apps = random.randint(1, 3)
             for _ in range(num_apps):
@@ -327,6 +384,8 @@ class Command(BaseCommand):
                 )
 
                 status = random.choice(statuses)
+                if status == 'APPROVED' and has_active_loan:
+                    status = 'REJECTED'
                 app = LoanApplication.objects.create(
                     member=member,
                     loan_type=loan_type,
@@ -343,6 +402,10 @@ class Command(BaseCommand):
                         'monthly_salary': float(member.monthly_income),
                         'other_income': random.randint(0, 5000),
                     },
+                    rejection_reason=(
+                        'Member already has an active loan'
+                        if status == 'REJECTED' else ''
+                    ),
                 )
                 applications_created += 1
 
@@ -372,49 +435,69 @@ class Command(BaseCommand):
                         approved_by=admin_user,
                     )
                     loans_created += 1
+                    has_active_loan = True
 
-                    # Create repayment schedule
-                    start_date = date.today() - timedelta(days=random.randint(30, 180))
+                    # Backdate the loan so its schedule has some past installments
+                    start_date = today - timedelta(days=random.randint(30, 180))
+                    approved_at = timezone.make_aware(
+                        datetime.combine(start_date, datetime.min.time())
+                    ) + timedelta(hours=9)
+                    LoanApplication.objects.filter(pk=app.pk).update(
+                        application_date=approved_at - timedelta(days=3),
+                        reviewed_by=admin_user,
+                        reviewed_at=approved_at,
+                    )
+                    Loan.objects.filter(pk=loan.pk).update(
+                        date_approved=approved_at, created_at=approved_at,
+                    )
+
+                    # The last installment absorbs cent rounding so the
+                    # schedule adds up exactly to total_repayment
+                    last_amount = (
+                        loan.total_repayment
+                        - loan.monthly_installment * (duration - 1)
+                    )
+                    total_paid = Decimal('0')
+
                     for i in range(1, duration + 1):
                         due_date = start_date + timedelta(days=30 * i)
-                        days_overdue = max(0, (date.today() - due_date).days)
+                        expected = last_amount if i == duration else loan.monthly_installment
+                        days_overdue = max(0, (today - due_date).days)
 
-                        payment_status = 'PAID'
-                        amount_paid = loan.monthly_installment
-                        remaining = Decimal('0')
+                        if due_date > today:
+                            # Future installments haven't been paid yet
+                            payment_status = 'PENDING'
+                            amount_paid = Decimal('0')
+                        elif random.random() < 0.15:
+                            payment_status = 'OVERDUE'
+                            amount_paid = Decimal('0')
+                        elif random.random() < 0.15:
+                            payment_status = 'PARTIALLY_PAID'
+                            amount_paid = (
+                                expected * Decimal(str(random.uniform(0.3, 0.9)))
+                            ).quantize(Decimal('0.01'))
+                        else:
+                            payment_status = 'PAID'
+                            amount_paid = expected
 
-                        if days_overdue > 0:
-                            if random.random() < 0.3:
-                                payment_status = 'OVERDUE'
-                                amount_paid = Decimal('0')
-                                remaining = loan.monthly_installment
-                            elif random.random() < 0.5:
-                                payment_status = 'PARTIALLY_PAID'
-                                amount_paid = loan.monthly_installment * Decimal(str(random.uniform(0.3, 0.9)))
-                                remaining = loan.monthly_installment - amount_paid
-                            else:
-                                payment_status = 'PAID'
-                        elif i > duration * 0.3:
-                            # Some future installments still pending
-                            if random.random() < 0.4:
-                                payment_status = 'PENDING'
-                                amount_paid = Decimal('0')
-                                remaining = loan.monthly_installment
+                        if payment_status == 'PAID':
+                            days_overdue = 0
 
                         schedule = RepaymentSchedule.objects.create(
                             loan=loan,
                             installment_number=i,
                             due_date=due_date,
-                            expected_amount=loan.monthly_installment,
+                            expected_amount=expected,
                             amount_paid=amount_paid,
-                            remaining_amount=remaining,
+                            remaining_amount=expected - amount_paid,
                             payment_status=payment_status,
                             days_overdue=days_overdue,
                         )
 
-                        # Record payments for paid/partial installments
+                        # Record payments for paid/partial installments,
+                        # dated a few days around the due date
                         if amount_paid > 0:
-                            Repayment.objects.create(
+                            repayment = Repayment.objects.create(
                                 loan=loan,
                                 schedule=schedule,
                                 amount=amount_paid,
@@ -422,10 +505,32 @@ class Command(BaseCommand):
                                 recorded_by=admin_user,
                                 notes='Seed data payment',
                             )
+                            paid_at = timezone.make_aware(
+                                datetime.combine(
+                                    due_date - timedelta(days=random.randint(0, 5)),
+                                    datetime.min.time(),
+                                )
+                            ) + timedelta(hours=random.randint(8, 16))
+                            Repayment.objects.filter(pk=repayment.pk).update(
+                                payment_date=paid_at, created_at=paid_at,
+                            )
+                            total_paid += amount_paid
+
+                    # Keep the loan's running totals in line with its payments
+                    loan.amount_repaid = total_paid
+                    loan.outstanding_balance = loan.total_repayment - total_paid
+                    if loan.outstanding_balance <= 0:
+                        loan.outstanding_balance = Decimal('0')
+                        loan.status = 'COMPLETED'
+                    loan.save(update_fields=['amount_repaid', 'outstanding_balance', 'status'])
 
         self.stdout.write(self.style.SUCCESS(
             f'Created {applications_created} applications and {loans_created} loans'
         ))
+
+        # Classify overdue installments so the Defaulters page has data
+        from defaulters.services import DefaulterDetectionService
+        DefaulterDetectionService().update_statuses()
 
         # Create sample notifications
         for member in random.sample(members, min(10, len(members))):
@@ -437,6 +542,9 @@ class Command(BaseCommand):
             )
 
         self.stdout.write(self.style.SUCCESS('Loaded seed data successfully!'))
+        self.print_logins()
+
+    def print_logins(self):
         self.stdout.write('')
         self.stdout.write('Admin login: admin@unzalaru.com / password123')
         self.stdout.write('Supervisor login: supervisor@unzalaru.com / password123')

@@ -8,6 +8,16 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
 import { SearchInput } from '@/components/shared/search-input'
 import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency } from '@/lib/formatters'
 import { BadgeCheck, Plus } from 'lucide-react'
@@ -23,6 +33,31 @@ export function MemberList() {
   const [employmentFilter, setEmploymentFilter] = useState('')
   const approveMember = useApproveMember()
   const rejectMember = useRejectMember()
+  // Approve/reject are confirmed first so a stray click can't change a membership
+  const [confirming, setConfirming] = useState<{
+    member: { id: number; full_name: string }
+    kind: 'approve' | 'reject'
+  } | null>(null)
+
+  const runConfirmed = () => {
+    if (!confirming) return
+    const { member, kind } = confirming
+    setConfirming(null)
+    if (kind === 'approve') {
+      approveMember.mutate(member.id, {
+        onSuccess: () => toast.success(`${member.full_name} approved`),
+        onError: () => toast.error('Failed to approve member'),
+      })
+    } else {
+      rejectMember.mutate(
+        { id: member.id, reason: 'Rejected from members list' },
+        {
+          onSuccess: () => toast.success(`${member.full_name} rejected`),
+          onError: () => toast.error('Failed to reject member'),
+        }
+      )
+    }
+  }
 
   const params: Record<string, unknown> = { page, page_size: 20 }
   if (search) params.search = search
@@ -40,6 +75,29 @@ export function MemberList() {
 
   return (
     <div>
+      <AlertDialog open={confirming !== null} onOpenChange={(open) => !open && setConfirming(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirming?.kind === 'approve' ? 'Approve' : 'Reject'} {confirming?.member.full_name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirming?.kind === 'approve'
+                ? 'Their membership becomes active and they can apply for loans.'
+                : 'Their signup is rejected and their account is deactivated.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant={confirming?.kind === 'reject' ? 'destructive' : 'default'}
+              onClick={runConfirmed}
+            >
+              {confirming?.kind === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <PageHeader
         title="Members"
         description={`${totalCount} total members`}
@@ -140,12 +198,7 @@ export function MemberList() {
                             <Button
                               size="sm"
                               disabled={approveMember.isPending || rejectMember.isPending}
-                              onClick={() =>
-                                approveMember.mutate(member.id, {
-                                  onSuccess: () => toast.success(`${member.full_name} approved`),
-                                  onError: () => toast.error('Failed to approve member'),
-                                })
-                              }
+                              onClick={() => setConfirming({ member, kind: 'approve' })}
                             >
                               Approve
                             </Button>
@@ -153,15 +206,7 @@ export function MemberList() {
                               size="sm"
                               variant="outline"
                               disabled={approveMember.isPending || rejectMember.isPending}
-                              onClick={() =>
-                                rejectMember.mutate(
-                                  { id: member.id, reason: 'Rejected from members list' },
-                                  {
-                                    onSuccess: () => toast.success(`${member.full_name} rejected`),
-                                    onError: () => toast.error('Failed to reject member'),
-                                  }
-                                )
-                              }
+                              onClick={() => setConfirming({ member, kind: 'reject' })}
                             >
                               Reject
                             </Button>

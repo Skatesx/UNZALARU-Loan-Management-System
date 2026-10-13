@@ -255,6 +255,19 @@ class LoanApplicationService:
         schedule_service = RepaymentScheduleService()
         schedule_service.generate_schedule(loan)
 
+        AuditService.log_action(
+            user=approved_by,
+            action='APPROVED_LOAN',
+            entity_type='LoanApplication',
+            entity_id=application.application_id,
+            description=(
+                f'Approved application {application.application_id} for '
+                f'{application.member.full_name}: K{loan.principal} over '
+                f'{loan.duration_months} months (loan {loan.loan_id})'
+            ),
+            new_value={'loan_id': loan.loan_id, 'principal': str(loan.principal)},
+        )
+
         # Send notification
         NotificationService.notify_loan_approved(loan)
 
@@ -263,6 +276,7 @@ class LoanApplicationService:
     @transaction.atomic
     def reject_application(self, application, rejected_by, reason=''):
         """Reject a loan application."""
+        from audit.services import AuditService
         from notifications.services import NotificationService
 
         if application.status not in ['PENDING', 'UNDER_REVIEW']:
@@ -273,6 +287,17 @@ class LoanApplicationService:
         application.reviewed_by = rejected_by
         application.reviewed_at = timezone.now()
         application.save()
+
+        AuditService.log_action(
+            user=rejected_by,
+            action='REJECTED_LOAN',
+            entity_type='LoanApplication',
+            entity_id=application.application_id,
+            description=(
+                f'Rejected application {application.application_id} for '
+                f'{application.member.full_name}. Reason: {reason or "not provided"}'
+            ),
+        )
 
         # Send notification
         NotificationService.notify_loan_rejected(application, reason)
