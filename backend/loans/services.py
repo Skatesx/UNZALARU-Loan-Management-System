@@ -42,23 +42,20 @@ class LoanCalculationService:
     def generate_installment_dates(start_date, months):
         """Generate monthly due dates starting from next month.
 
-        Clamps to the last valid day of short months (e.g. Jan 30 -> Feb 28),
-        so approvals on the 29th-31st no longer raise a ValueError.
+        Every date is counted from start_date, keeping its day of month and
+        clamping only within short months: a loan approved on Jan 31 is due
+        Feb 28, then Mar 31, Apr 30 - the due day never drifts permanently
+        earlier. Approvals on the 29th-31st no longer raise a ValueError.
         """
         import calendar
 
-        def add_one_month(d):
-            month_index = d.month - 1 + 1
-            year = d.year + month_index // 12
-            month = month_index % 12 + 1
-            day = min(d.day, calendar.monthrange(year, month)[1])
-            return d.replace(year=year, month=month, day=day)
-
         dates = []
-        current = start_date
-        for _ in range(months):
-            current = add_one_month(current)
-            dates.append(current)
+        for i in range(1, months + 1):
+            month_index = start_date.month - 1 + i
+            year = start_date.year + month_index // 12
+            month = month_index % 12 + 1
+            day = min(start_date.day, calendar.monthrange(year, month)[1])
+            dates.append(start_date.replace(year=year, month=month, day=day))
         return dates
 
     def calculate_loan(self, principal, annual_rate, months, interest_method):
