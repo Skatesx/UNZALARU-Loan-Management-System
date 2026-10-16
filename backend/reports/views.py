@@ -281,7 +281,7 @@ class LoanReportExportView(APIView):
         columns = [
             ('loan_id', 'Loan ID'),
             ('member_name', 'Member'),
-            ('member_id', 'Member ID'),
+            ('member_id', 'MAN Number'),
             ('amount', 'Amount (K)'),
             ('interest', 'Interest (K)'),
             ('total_repayment', 'Total Repayment (K)'),
@@ -333,7 +333,7 @@ class RepaymentReportExportView(APIView):
 
         columns = [
             ('member_name', 'Member'),
-            ('member_id', 'Member ID'),
+            ('member_id', 'MAN Number'),
             ('loan_id', 'Loan ID'),
             ('expected_payment', 'Expected (K)'),
             ('actual_payment', 'Actual (K)'),
@@ -354,4 +354,107 @@ class RepaymentReportExportView(APIView):
             response['Content-Disposition'] = 'attachment; filename="repayment_report.pdf"'
             return response
 
+        return Response({'error': 'Invalid format'}, status=400)
+
+
+def _membership_report(params):
+    """Members matching the report filters, with totals by status, school and department.
+
+    Filters (all optional): school, department, status (a membership status).
+    """
+    from django.db.models import Count
+
+    from members.models import APPLICATION_COUNT
+
+    filtered = Member.objects.all()
+    if params.get('school'):
+        filtered = filtered.filter(school=params['school'])
+    if params.get('department'):
+        filtered = filtered.filter(department=params['department'])
+    if params.get('status'):
+        filtered = filtered.filter(membership_status=params['status'])
+
+    queryset = (
+        filtered.select_related('user')
+        .annotate(annotated_application_count=APPLICATION_COUNT)
+        .order_by('school', 'department', 'user__last_name', 'user__first_name')
+    )
+
+    def counts(field):
+        # Counted on the un-annotated queryset: the application-count join
+        # would otherwise count one row per application, not per member
+        return list(
+            filtered.order_by().values(field).annotate(count=Count('id')).order_by('-count', field)
+        )
+
+    members = [
+        {
+            'member_id': m.member_id,
+            'member_name': m.user.get_full_name(),
+            'email': m.user.email,
+            'school': m.school or 'Not set',
+            'department': m.department,
+            'employment_status': m.employment_status,
+            'membership_status': m.membership_status,
+            'application_count': m.application_count,
+            'registered': m.created_at.strftime('%Y-%m-%d'),
+        }
+        for m in queryset
+    ]
+    return {
+        'total': len(members),
+        'by_status': [
+            {'status': row['membership_status'], 'count': row['count']}
+            for row in counts('membership_status')
+        ],
+        'by_school': [
+            {'school': row['school'] or 'Not set', 'count': row['count']}
+            for row in counts('school')
+        ],
+        'by_department': [
+            {'department': row['department'], 'count': row['count']}
+            for row in counts('department')
+        ],
+        'members': members,
+    }
+
+
+class MembershipReportView(APIView):
+    """Membership report: members by status, school and department."""
+
+    permission_classes = [IsStaffUser]
+
+    def get(self, request):
+        return Response(_membership_report(request.query_params))
+
+
+class MembershipReportExportView(APIView):
+    """Export the membership report (same filters) as CSV or PDF."""
+
+    permission_classes = [IsStaffUser]
+
+    def get(self, request, format_type):
+        report = _membership_report(request.query_params)
+        columns = [
+            ('member_id', 'MAN Number'),
+            ('member_name', 'Member'),
+            ('school', 'School'),
+            ('department', 'Department'),
+            ('employment_status', 'Employment'),
+            ('membership_status', 'Membership'),
+            ('application_count', 'Times Applied'),
+            ('registered', 'Registered'),
+        ]
+        if format_type == 'csv':
+            csv_data = ReportExportService.generate_csv(report['members'], columns, 'membership_report')
+            response = HttpResponse(csv_data, content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="membership_report.csv"'
+            return response
+        if format_type == 'pdf':
+            pdf_data = ReportExportService.generate_pdf(
+                report['members'], columns, 'Membership Report', 'membership_report'
+            )
+            response = HttpResponse(pdf_data, content_type='application/pdf')
+            response['Content-Disposition'] = 'attachment; filename="membership_report.pdf"'
+            return response
         return Response({'error': 'Invalid format'}, status=400)

@@ -82,6 +82,7 @@ export function MemberDetail() {
                       <div>
                         <p className="text-xs text-muted-foreground">Department</p>
                         <p className="text-sm font-medium">{member.department}</p>
+                        {member.school && <p className="text-xs text-muted-foreground">{member.school}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

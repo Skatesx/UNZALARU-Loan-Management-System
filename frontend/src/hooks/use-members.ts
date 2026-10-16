@@ -169,3 +169,20 @@ export function useRejectMember() {
     },
   })
 }
+
+export interface SchoolDepartments {
+  school: string
+  departments: string[]
+}
+
+/** UNZA schools and their departments (public; used by signup and report filters). */
+export function useSchools() {
+  return useQuery({
+    queryKey: ['schools'],
+    queryFn: async () => {
+      const response = await apiClient.get<SchoolDepartments[]>('/members/schools/')
+      return response.data
+    },
+    staleTime: Infinity,
+  })
+}

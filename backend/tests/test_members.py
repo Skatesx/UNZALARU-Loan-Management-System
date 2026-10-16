@@ -29,7 +29,7 @@ class TestMemberCRUD:
             'nrc_number': 'NRC-999999',
             'phone_number': '+260700000001',
             'address': '456 Test Road',
-            'department': 'Mathematics',
+            'department': 'Mathematics and Statistics',
             'employment_status': 'PERMANENT',
             'member_id': '45678',
         }, content_type='application/json')

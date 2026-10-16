@@ -8,6 +8,7 @@ import { AuthStoryPanel, AuthBrandRow } from '@/components/auth/story-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DepartmentSelect } from '@/components/shared/department-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -300,7 +301,12 @@ export function SignupPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="department">Department</Label>
-                        <Input id="department" className="h-10" placeholder="e.g. Computer Science" {...register('department')} />
+                        <DepartmentSelect
+                          id="department"
+                          className="w-full h-10"
+                          value={watch('department')}
+                          onChange={(d) => setValue('department', d, { shouldValidate: true })}
+                        />
                         {errors.department && (
                           <p className="text-sm text-destructive">{errors.department.message}</p>
                         )}

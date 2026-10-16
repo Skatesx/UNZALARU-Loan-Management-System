@@ -25,6 +25,7 @@ import { LoanReport } from '@/pages/admin/reports/loan-report'
 import { RepaymentReport } from '@/pages/admin/reports/repayment-report'
 import { DefaulterReport } from '@/pages/admin/reports/defaulter-report'
 import { EligibilityReport } from '@/pages/admin/reports/eligibility-report'
+import { MembershipReport } from '@/pages/admin/reports/membership-report'
 import { AuditLog } from '@/pages/admin/audit/audit-log'
 import { LoanTypeConfig } from '@/pages/admin/config/loan-types'
 import { EligibilityRuleConfig } from '@/pages/admin/config/eligibility-rules'
@@ -107,6 +108,7 @@ function App() {
                   <Route path="reports/repayments" element={<RepaymentReport />} />
                   <Route path="reports/defaulters" element={<DefaulterReport />} />
                   <Route path="reports/eligibility" element={<EligibilityReport />} />
+                  <Route path="reports/membership" element={<MembershipReport />} />
                   <Route path="audit" element={<AuditLog />} />
                   <Route path="config/loan-types" element={<LoanTypeConfig />} />
                   <Route path="config/eligibility-rules" element={<EligibilityRuleConfig />} />
@@ -136,6 +138,7 @@ function App() {
                   <Route path="reports/repayments" element={<RepaymentReport />} />
                   <Route path="reports/defaulters" element={<DefaulterReport />} />
                   <Route path="reports/eligibility" element={<EligibilityReport />} />
+                  <Route path="reports/membership" element={<MembershipReport />} />
                   <Route path="audit" element={<AuditLog />} />
                   <Route path="notifications" element={<AdminNotificationList />} />
                 </Route>

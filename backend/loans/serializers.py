@@ -13,7 +13,7 @@ class LoanTypeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'min_amount', 'max_amount',
             'min_duration_months', 'max_duration_months', 'interest_rate',
-            'interest_method', 'allow_multiple_active', 'is_active',
+            'interest_method', 'allow_multiple_active', 'allowed_amounts', 'is_active',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -79,8 +79,10 @@ class LoanApplicationCreateSerializer(serializers.ModelSerializer):
         model = LoanApplication
         fields = [
             'loan_type', 'requested_amount', 'duration_months', 'purpose',
-            'current_employment_info', 'income_info', 'existing_loan_obligations',
+            'current_employment_info', 'existing_loan_obligations',
         ]
+        # UNZALARU offers one flat loan; members don't choose a type
+        extra_kwargs = {'loan_type': {'required': False}}
 
 
 class LoanApplicationListSerializer(serializers.ModelSerializer):

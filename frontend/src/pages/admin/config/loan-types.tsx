@@ -1,217 +1,172 @@
-import { useState } from 'react'
-import { useLoanTypes, useCreateLoanType, useUpdateLoanType } from '@/hooks/use-loans'
+import { useEffect, useState } from 'react'
+import { useLoanTypes, useUpdateLoanType } from '@/hooks/use-loans'
 import { PageHeader } from '@/components/shared/page-header'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
 import { ErrorState } from '@/components/shared/error-state'
+import { EmptyState } from '@/components/shared/empty-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { formatCurrency } from '@/lib/formatters'
 import { toast } from 'sonner'
-import { Plus, Pencil } from 'lucide-react'
-import type { InterestMethod } from '@/types/loan'
+import { Loader2 } from 'lucide-react'
+import type { LoanType } from '@/types/loan'
 
-interface LoanTypeFormData {
-  name: string
-  description: string
-  min_amount: number
-  max_amount: number
-  min_duration_months: number
-  max_duration_months: number
-  interest_rate: number
-  interest_method: InterestMethod
-  allow_multiple_active: boolean
-  is_active: boolean
+/** "10000, 15000, 20000" -> [10000, 15000, 20000] (sorted, positive, unique) */
+function parseAmounts(text: string): number[] {
+  const values = text
+    .split(/[,\s]+/)
+    .map((v) => Number(v.replace(/[^0-9.]/g, '')))
+    .filter((v) => Number.isFinite(v) && v > 0)
+  return [...new Set(values)].sort((a, b) => a - b)
 }
 
-const defaultForm: LoanTypeFormData = {
-  name: '',
-  description: '',
-  min_amount: 0,
-  max_amount: 0,
-  min_duration_months: 1,
-  max_duration_months: 12,
-  interest_rate: 0,
-  interest_method: 'FLAT',
-  allow_multiple_active: false,
-  is_active: true,
-}
-
+/**
+ * UNZALARU offers one flat loan - membership is the qualification - so this
+ * page edits that single product instead of managing several loan types.
+ */
 export function LoanTypeConfig() {
   const { data: loanTypes, isLoading, error, refetch } = useLoanTypes()
-  const createLoanType = useCreateLoanType()
   const updateLoanType = useUpdateLoanType()
 
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [form, setForm] = useState<LoanTypeFormData>(defaultForm)
+  const types: LoanType[] = Array.isArray(loanTypes) ? loanTypes : []
+  const product = types.find((t) => t.is_active)
 
-  const handleOpen = (loanType?: any) => {
-    if (loanType) {
-      setEditingId(loanType.id)
-      setForm({
-        name: loanType.name || '',
-        description: loanType.description || '',
-        min_amount: Number(loanType.min_amount) || 0,
-        max_amount: Number(loanType.max_amount) || 0,
-        min_duration_months: loanType.min_duration_months || 1,
-        max_duration_months: loanType.max_duration_months || 12,
-        interest_rate: Number(loanType.interest_rate) || 0,
-        interest_method: loanType.interest_method || 'FLAT',
-        allow_multiple_active: loanType.allow_multiple_active || false,
-        is_active: loanType.is_active !== false,
-      })
-    } else {
-      setEditingId(null)
-      setForm(defaultForm)
-    }
-    setDialogOpen(true)
+  const [description, setDescription] = useState('')
+  const [rate, setRate] = useState('')
+  const [amountsText, setAmountsText] = useState('')
+  const [maxMonths, setMaxMonths] = useState('')
+
+  useEffect(() => {
+    if (!product) return
+    setDescription(product.description)
+    setRate(String(Number(product.interest_rate)))
+    setAmountsText((product.allowed_amounts || []).map(Number).join(', '))
+    setMaxMonths(String(product.max_duration_months))
+  }, [product?.id, product?.updated_at])
+
+  if (isLoading) return <LoadingSkeleton type="form" />
+  if (error) return <ErrorState message="Failed to load loan settings" onRetry={() => refetch()} />
+  if (!product) {
+    return <EmptyState title="No active loan product" description="Run the database migrations to create the Flat Loan." />
   }
+
+  const amounts = parseAmounts(amountsText)
+  const rateValue = Number(rate)
+  const monthsValue = Number(maxMonths)
+  const valid =
+    amounts.length > 0 &&
+    Number.isFinite(rateValue) && rateValue >= 0 && rateValue <= 100 &&
+    Number.isInteger(monthsValue) && monthsValue >= 1 && monthsValue <= 60
 
   const handleSave = async () => {
     try {
-      if (editingId) {
-        await updateLoanType.mutateAsync({ id: editingId, data: form as any })
-        toast.success('Loan type updated')
-      } else {
-        await createLoanType.mutateAsync(form as any)
-        toast.success('Loan type created')
-      }
-      setDialogOpen(false)
+      await updateLoanType.mutateAsync({
+        id: product.id,
+        data: {
+          // PUT replaces the record, so send every required field
+          name: product.name,
+          is_active: true,
+          allow_multiple_active: product.allow_multiple_active,
+          description,
+          interest_rate: rateValue,
+          interest_method: 'FLAT_ONCE',
+          allowed_amounts: amounts,
+          min_amount: amounts[0],
+          max_amount: amounts[amounts.length - 1],
+          min_duration_months: 1,
+          max_duration_months: monthsValue,
+        } as Partial<LoanType>,
+      })
+      toast.success('Loan settings saved')
       refetch()
     } catch {
-      toast.error('Failed to save loan type')
+      toast.error('Failed to save loan settings')
     }
   }
-
-  if (isLoading) return <LoadingSkeleton type="table" />
-  if (error) return <ErrorState message="Failed to load loan types" onRetry={() => refetch()} />
-
-  const types = Array.isArray(loanTypes) ? loanTypes : (loanTypes as any)?.results || []
 
   return (
     <div>
       <PageHeader
-        title="Loan Type Configuration"
-        description="Manage loan types and their parameters"
-        actions={
-          <Button onClick={() => handleOpen()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Loan Type
-          </Button>
-        }
+        title="Loan Settings"
+        description="UNZALARU members qualify by membership for one flat loan"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {types.map((lt: any) => (
-          <Card key={lt.id}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">{lt.name}</CardTitle>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs px-2 py-0.5 rounded ${lt.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
-                  {lt.is_active ? 'Active' : 'Inactive'}
-                </span>
-                <Button variant="ghost" size="sm" onClick={() => handleOpen(lt)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p className="text-muted-foreground">{lt.description}</p>
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <div>
-                  <p className="text-xs text-muted-foreground/70">Amount Range</p>
-                  <p className="font-medium">K{Number(lt.min_amount).toLocaleString()} — K{Number(lt.max_amount).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground/70">Duration</p>
-                  <p className="font-medium">{lt.min_duration_months}—{lt.max_duration_months} months</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground/70">Interest Rate</p>
-                  <p className="font-medium">{lt.interest_rate}% ({lt.interest_method})</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground/70">Multiple Active</p>
-                  <p className="font-medium">{lt.allow_multiple_active ? 'Allowed' : 'Not Allowed'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Edit Loan Type' : 'Create Loan Type'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{product.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Label htmlFor="amounts">Loan amounts (K)</Label>
+              <Input
+                id="amounts"
+                value={amountsText}
+                onChange={(e) => setAmountsText(e.target.value)}
+                placeholder="10000, 15000, 20000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Members choose one of these amounts. Separate them with commas.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Min Amount</Label>
-                <Input type="number" value={form.min_amount} onChange={(e) => setForm({ ...form, min_amount: Number(e.target.value) })} />
+                <Label htmlFor="rate">Interest rate (%)</Label>
+                <Input id="rate" type="number" step="0.01" min="0" value={rate} onChange={(e) => setRate(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Charged once on the amount.</p>
               </div>
               <div className="space-y-2">
-                <Label>Max Amount</Label>
-                <Input type="number" value={form.max_amount} onChange={(e) => setForm({ ...form, max_amount: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Min Duration (months)</Label>
-                <Input type="number" value={form.min_duration_months} onChange={(e) => setForm({ ...form, min_duration_months: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Max Duration (months)</Label>
-                <Input type="number" value={form.max_duration_months} onChange={(e) => setForm({ ...form, max_duration_months: Number(e.target.value) })} />
+                <Label htmlFor="months">Longest repayment (months)</Label>
+                <Input id="months" type="number" min="1" max="60" value={maxMonths} onChange={(e) => setMaxMonths(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Members pick 1 up to this.</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Interest Rate (%)</Label>
-                <Input type="number" step="0.01" value={form.interest_rate} onChange={(e) => setForm({ ...form, interest_rate: Number(e.target.value) })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Method</Label>
-                <Select value={form.interest_method} onValueChange={(v) => setForm({ ...form, interest_method: (v || 'FLAT') as InterestMethod })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FLAT">Flat Rate</SelectItem>
-                    <SelectItem value="REDUCING_BALANCE">Reducing Balance</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Switch checked={form.allow_multiple_active} onCheckedChange={(v) => setForm({ ...form, allow_multiple_active: v })} />
-                <Label>Allow multiple active</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                <Label>Active</Label>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave} disabled={createLoanType.isPending || updateLoanType.isPending}>
-                {editingId ? 'Update' : 'Create'}
+            <div className="flex justify-end">
+              <Button onClick={handleSave} disabled={!valid || updateLoanType.isPending}>
+                {updateLoanType.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save
               </Button>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>What members repay</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {valid ? (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="py-2">Amount</th>
+                    <th className="py-2">Interest</th>
+                    <th className="py-2">Total to repay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {amounts.map((a) => (
+                    <tr key={a} className="border-b last:border-b-0">
+                      <td className="py-2 font-medium">{formatCurrency(a)}</td>
+                      <td className="py-2">{formatCurrency(a * rateValue / 100)}</td>
+                      <td className="py-2 font-medium">{formatCurrency(a * (1 + rateValue / 100))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-muted-foreground">Enter valid amounts, a rate and a repayment period to see the totals.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

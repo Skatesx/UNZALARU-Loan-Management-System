@@ -110,7 +110,9 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         with the message as a plain string.
         """
         member = Member.objects.get(user=self.request.user)
-        loan_type = serializer.validated_data['loan_type']
+        loan_type = serializer.validated_data.get('loan_type') or LoanType.current()
+        if loan_type is None:
+            raise ValueError('No loan product is currently available')
 
         service = LoanApplicationService()
         application = service.create_application(
@@ -120,7 +122,6 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
             duration_months=serializer.validated_data['duration_months'],
             purpose=serializer.validated_data['purpose'],
             employment_info=serializer.validated_data.get('current_employment_info', {}),
-            income_info=serializer.validated_data.get('income_info', {}),
             obligations=serializer.validated_data.get('existing_loan_obligations', []),
         )
         # Return the created application

@@ -18,7 +18,7 @@ class MemberFilter(django_filters.FilterSet):
     class Meta:
         model = Member
         fields = [
-            'department', 'employment_status', 'membership_status',
+            'department', 'school', 'employment_status', 'membership_status',
             'account_status',
         ]
 

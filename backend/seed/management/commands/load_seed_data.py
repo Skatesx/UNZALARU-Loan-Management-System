@@ -65,6 +65,14 @@ class Command(BaseCommand):
             member.member_id = man_number
             member.save(update_fields=['member_id'])
 
+    def use_listed_department(self, member, department):
+        """Move demo members off departments that aren't in the UNZA list."""
+        from members.schools import canonical_department
+
+        if canonical_department(member.department) is None:
+            member.department = department
+            member.save(update_fields=['department'])
+
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
         if options['reset']:
@@ -109,62 +117,29 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Supervisor user already exists')
 
-        # Create loan types
-        loan_types = []
-        loan_type_data = [
-            {
-                'name': 'Emergency Loan',
-                'description': 'Short-term emergency loan for urgent needs',
-                'min_amount': 1000,
-                'max_amount': 10000,
-                'min_duration_months': 3,
-                'max_duration_months': 6,
-                'interest_rate': 12,
-                'interest_method': 'FLAT',
-                'allow_multiple_active': False,
-            },
-            {
-                'name': 'Development Loan',
-                'description': 'Medium-term loan for personal development',
-                'min_amount': 5000,
-                'max_amount': 50000,
-                'min_duration_months': 6,
-                'max_duration_months': 24,
-                'interest_rate': 15,
-                'interest_method': 'FLAT',
-                'allow_multiple_active': False,
-            },
-            {
-                'name': 'Education Loan',
-                'description': 'Loan for educational purposes',
-                'min_amount': 2000,
-                'max_amount': 30000,
-                'min_duration_months': 6,
-                'max_duration_months': 36,
+        # UNZALARU offers a single flat loan; membership is the qualification
+        flat_loan, created = LoanType.objects.update_or_create(
+            name='Flat Loan',
+            defaults={
+                'description': (
+                    'UNZALARU members qualify by membership. Borrow K10,000, '
+                    'K15,000 or K20,000 at 10% interest charged once, repaid '
+                    'over 1-12 months.'
+                ),
+                'min_amount': 10000,
+                'max_amount': 20000,
+                'allowed_amounts': [10000, 15000, 20000],
+                'min_duration_months': 1,
+                'max_duration_months': 12,
                 'interest_rate': 10,
-                'interest_method': 'REDUCING_BALANCE',
+                'interest_method': 'FLAT_ONCE',
                 'allow_multiple_active': False,
+                'is_active': True,
             },
-            {
-                'name': 'Housing Loan',
-                'description': 'Long-term housing loan',
-                'min_amount': 20000,
-                'max_amount': 200000,
-                'min_duration_months': 12,
-                'max_duration_months': 60,
-                'interest_rate': 8,
-                'interest_method': 'REDUCING_BALANCE',
-                'allow_multiple_active': False,
-            },
-        ]
-
-        for data in loan_type_data:
-            lt, created = LoanType.objects.get_or_create(
-                name=data['name'], defaults=data
-            )
-            loan_types.append(lt)
-            if created:
-                self.stdout.write(f'Created loan type: {lt.name}')
+        )
+        LoanType.objects.exclude(pk=flat_loan.pk).update(is_active=False)
+        if created:
+            self.stdout.write('Created loan product: Flat Loan')
 
         # Create eligibility rules
         eligibility_rules = [
@@ -235,10 +210,13 @@ class Command(BaseCommand):
         self.stdout.write('Configured default loan approval criteria')
 
         # Create member users
+        # Departments from the UNZA list (members/schools.py), across several schools
         departments = [
-            'Computer Science', 'Mathematics', 'Physics', 'Chemistry',
-            'Biology', 'Economics', 'Business', 'Engineering',
-            'Law', 'Medicine', 'Education', 'Arts',
+            'Computer Science', 'Mathematics and Statistics', 'Physics',
+            'Chemistry', 'Biological Sciences', 'Economics',
+            'Business Administration', 'Civil and Environmental Engineering',
+            'Public Law', 'Internal Medicine', 'Mathematics and Science Education',
+            'History', 'Nursing', 'Mining Engineering',
         ]
         employment_statuses = ['PERMANENT', 'CONTRACT', 'PART_TIME']
 
@@ -308,6 +286,7 @@ class Command(BaseCommand):
                 }
             )
             self.use_man_number(member, str(10230 + i * 7))
+            self.use_listed_department(member, departments[i % len(departments)])
             members.append(member)
 
         self.stdout.write(self.style.SUCCESS(f'Created {len(members)} members'))
@@ -315,9 +294,9 @@ class Command(BaseCommand):
         # Create pending members awaiting approval
         pending_members = []
         pending_names = [
-            ('Chanda', 'Mwansa', 'Library Science'),
-            ('Mutale', 'Chewe', 'Veterinary Medicine'),
-            ('Bupe', 'Chisanga', 'Surveying'),
+            ('Chanda', 'Mwansa', 'Library and Information Science'),
+            ('Mutale', 'Chewe', 'Clinical Studies'),
+            ('Bupe', 'Chisanga', 'Geomatic Engineering'),
         ]
         for idx, (first, last, dept) in enumerate(pending_names):
             email = f'{first.lower()}.{last.lower()}@unzalaru.com'
@@ -347,6 +326,7 @@ class Command(BaseCommand):
                 }
             )
             self.use_man_number(member, str(30101 + idx))
+            self.use_listed_department(member, dept)
             pending_members.append(member)
 
         self.stdout.write(self.style.SUCCESS(
@@ -375,11 +355,8 @@ class Command(BaseCommand):
             # Each member gets 1-3 applications
             num_apps = random.randint(1, 3)
             for _ in range(num_apps):
-                loan_type = random.choice(loan_types)
-                amount = random.randint(
-                    int(loan_type.min_amount),
-                    int(loan_type.max_amount)
-                )
+                loan_type = flat_loan
+                amount = random.choice(loan_type.allowed_amounts)
                 duration = random.randint(
                     loan_type.min_duration_months,
                     loan_type.max_duration_months

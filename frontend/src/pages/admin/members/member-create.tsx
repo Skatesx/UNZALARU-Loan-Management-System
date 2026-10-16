@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DepartmentSelect } from '@/components/shared/department-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
@@ -106,7 +107,11 @@ export function MemberCreate() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="department">Department *</Label>
-                  <Input id="department" {...register('department')} />
+                  <DepartmentSelect
+                    id="department"
+                    value={watch('department')}
+                    onChange={(d) => setValue('department', d, { shouldValidate: true })}
+                  />
                   {errors.department && <p className="text-sm text-destructive">{errors.department.message}</p>}
                 </div>
                 <div className="space-y-2">

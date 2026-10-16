@@ -53,7 +53,7 @@ class TestMemberSignup:
             'nrc_number': 'NRC-DUP-1',
             'phone_number': '+260700000000',
             'address': 'A',
-            'department': 'B',
+            'department': 'Physics',
             'employment_status': 'PERMANENT',
             'member_id': '20002',
         }, content_type='application/json')
@@ -70,7 +70,7 @@ class TestMemberSignup:
             'nrc_number': 'NRC-SAME-123',
             'phone_number': '+260700111111',
             'address': 'A',
-            'department': 'B',
+            'department': 'Physics',
             'employment_status': 'PERMANENT',
             'member_id': '20003',
         }, content_type='application/json')
@@ -83,7 +83,7 @@ class TestMemberSignup:
             'nrc_number': 'NRC-SAME-123',
             'phone_number': '+260700222222',
             'address': 'C',
-            'department': 'D',
+            'department': 'Chemistry',
             'employment_status': 'PERMANENT',
             'member_id': '20004',
         }, content_type='application/json')
@@ -219,7 +219,7 @@ class TestManNumbers:
             'nrc_number': nrc,
             'phone_number': '+260700555555',
             'address': 'A',
-            'department': 'B',
+            'department': 'Physics',
             'employment_status': 'PERMANENT',
         }, content_type='application/json')
 
@@ -232,7 +232,7 @@ class TestManNumbers:
             'nrc_number': 'NRC-NOMAN',
             'phone_number': '+260700555555',
             'address': 'A',
-            'department': 'B',
+            'department': 'Physics',
             'employment_status': 'PERMANENT',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST

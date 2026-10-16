@@ -65,7 +65,8 @@ export const memberCreateSchema = z.object({
 export type MemberCreateFormData = z.infer<typeof memberCreateSchema>
 
 export const loanApplicationSchema = z.object({
-  loan_type: z.coerce.number().positive('Please select a loan type'),
+  // UNZALARU offers a single flat loan, filled in automatically
+  loan_type: z.coerce.number().optional(),
   requested_amount: z.coerce.number().positive('Amount must be positive'),
   duration_months: z.coerce.number().int().positive('Duration must be positive'),
   purpose: z.string().min(10, 'Please provide more details about the purpose'),

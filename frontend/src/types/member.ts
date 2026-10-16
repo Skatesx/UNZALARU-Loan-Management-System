@@ -12,6 +12,8 @@ export interface Member {
   phone_number: string
   address: string
   department: string
+  /** Worked out from the department */
+  school: string
   employment_status: EmploymentStatus
   membership_status: MembershipStatus
   approved_by: number | null
@@ -31,6 +33,8 @@ export interface MemberListItem {
   full_name: string
   email: string
   department: string
+  /** Worked out from the department */
+  school: string
   employment_status: EmploymentStatus
   membership_status: MembershipStatus
   account_status: AccountStatus

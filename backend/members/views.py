@@ -4,6 +4,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from audit.services import AuditService
 from notifications.services import NotificationService
@@ -20,6 +21,20 @@ from .serializers import (
     MemberSerializer,
     MemberUpdateSerializer,
 )
+
+
+class SchoolListView(APIView):
+    """UNZA schools with their departments, for dropdowns."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from .schools import UNZA_SCHOOLS
+
+        return Response([
+            {'school': school, 'departments': departments}
+            for school, departments in UNZA_SCHOOLS.items()
+        ])
 
 
 class MemberSignupView(generics.CreateAPIView):

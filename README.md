@@ -51,6 +51,8 @@ cd frontend && npm run build                          # typecheck + build
 ### Member signup and approval
 
 1. Visitor registers at `/signup` (name, email, **MAN number**, NRC, department, password).
+   The department is chosen from the UNZA list; the member's **school** is worked out from it
+   (edit the list in `backend/members/schools.py`).
    The MAN number (UNZA staff number) must be unique and becomes the member's ID.
 2. Account is created immediately and **can sign in**, but the membership is **PENDING**:
    - A banner on every member page shows "membership pending approval".
@@ -59,6 +61,15 @@ cd frontend && npm run build                          # typecheck + build
 3. Admin approves or rejects from **Members** (list filter `Pending` → inline Approve) or the member detail page; the member is notified either way.
 
 Income is not collected or verified anywhere in the system.
+
+### The flat loan
+
+UNZALARU members qualify by membership, so there is a single loan product, the
+**Flat Loan**: members borrow **K10,000, K15,000 or K20,000** at **10% interest
+charged once** (K10,000 → repay K11,000), repaid over **1-12 months** of their
+choice. Admins can change the amounts, rate and longest repayment period under
+**Configuration → Loan Settings**. The old loan types are kept, inactive, so
+existing loans keep their history.
 
 ### Loan approval criteria (configurable)
 
@@ -94,6 +105,14 @@ An admin may **override** a failed checklist by supplying a reason at approval t
 (required by the UI); the reason is stored on the application and a dedicated
 `OVERRIDDEN_APPROVAL_CRITERIA` audit entry is written.
 
+### Membership report
+
+**Reports → Membership** (admins and supervisors) lists members with totals by
+membership status, school and department. Filter by membership (defaults to
+current, i.e. active, members), **school** and **department**; CSV and PDF
+exports use the same filters. All report pages now have tabs to move between
+the Loans, Repayments, Defaulters, Eligibility and Membership reports.
+
 ### Repayment modes
 
 Every repayment records a payment mode: `CASH`, `BANK_TRANSFER`, `MOBILE_MONEY`,
@@ -114,5 +133,7 @@ has been removed from all APIs and UI in line with the updated requirements.
 - `POST /api/loan-applications/`, `POST /api/loan-applications/{id}/approve/` (body may include `override_reason`), `GET /api/loan-applications/{id}/criteria/`
 - `POST /api/repayments/` with `payment_mode`
 - `GET/PUT /api/admin/config/system/` — system configuration (criteria live here)
+- `GET /api/members/schools/` — UNZA schools and their departments
+- `GET /api/reports/membership/?status=&school=&department=`, `.../membership/export/{csv|pdf}/`
 
 Full schema: `http://localhost:8000/api/docs/` (Swagger) or `/api/redoc/`.

@@ -176,7 +176,10 @@ export function MemberList() {
                       </td>
                       <td className="px-4 py-3 font-medium">{member.full_name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
-                      <td className="px-4 py-3">{member.department}</td>
+                      <td className="px-4 py-3">
+                        <p>{member.department}</p>
+                        {member.school && <p className="text-xs text-muted-foreground">{member.school}</p>}
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={member.membership_status} />
                       </td>

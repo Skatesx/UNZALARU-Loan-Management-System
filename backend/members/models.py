@@ -43,6 +43,8 @@ class Member(models.Model):
     phone_number = models.CharField(max_length=20)
     address = models.TextField()
     department = models.CharField(max_length=100)
+    # Worked out from the department (see members/schools.py) on every save
+    school = models.CharField(max_length=120, blank=True, db_index=True)
     employment_status = models.CharField(
         max_length=20, choices=EMPLOYMENT_STATUS_CHOICES
     )
@@ -68,6 +70,15 @@ class Member(models.Model):
 
     def __str__(self):
         return f'{self.member_id} - {self.user.get_full_name()}'
+
+    def save(self, *args, **kwargs):
+        from .schools import school_for_department
+
+        self.school = school_for_department(self.department) or self.school
+        update_fields = kwargs.get('update_fields')
+        if update_fields is not None and 'department' in update_fields:
+            kwargs['update_fields'] = {*update_fields, 'school'}
+        super().save(*args, **kwargs)
 
     @property
     def full_name(self):
