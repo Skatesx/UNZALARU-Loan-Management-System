@@ -116,7 +116,11 @@ export function MemberList() {
         <div className="w-64">
           <SearchInput value={search} onChange={setSearch} placeholder="Search by name or MAN number..." />
         </div>
-        <Select value={statusFilter || 'ALL'} onValueChange={(v) => setStatusFilter(v || '')}>
+        <Select
+          value={statusFilter || 'ALL'}
+          onValueChange={(v) => setStatusFilter(v || '')}
+          items={{ ALL: 'All Status', PENDING: 'Pending', ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended' }}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -128,7 +132,11 @@ export function MemberList() {
             <SelectItem value="SUSPENDED">Suspended</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={employmentFilter || 'ALL'} onValueChange={(v) => setEmploymentFilter(v || '')}>
+        <Select
+          value={employmentFilter || 'ALL'}
+          onValueChange={(v) => setEmploymentFilter(v || '')}
+          items={{ ALL: 'All Employment', PERMANENT: 'Permanent', CONTRACT: 'Contract', PART_TIME: 'Part Time', RETIRED: 'Retired' }}
+        >
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All Employment" />
           </SelectTrigger>

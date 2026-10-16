@@ -110,7 +110,11 @@ export function MembershipReport() {
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6">
         <div className="space-y-1">
           <Label className="text-xs">Membership</Label>
-          <Select value={status} onValueChange={(v) => setStatus(v || ALL)}>
+          <Select
+            value={status}
+            onValueChange={(v) => setStatus(v || ALL)}
+            items={Object.fromEntries(STATUS_OPTIONS.map((o) => [o.value, o.label]))}
+          >
             <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
@@ -125,6 +129,7 @@ export function MembershipReport() {
           <Label className="text-xs">School</Label>
           <Select
             value={school}
+            items={{ [ALL]: 'All schools' }}
             onValueChange={(v) => {
               setSchool(v || ALL)
               setDepartment(ALL) // departments depend on the school
@@ -143,7 +148,11 @@ export function MembershipReport() {
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Department</Label>
-          <Select value={department} onValueChange={(v) => setDepartment(v || ALL)}>
+          <Select
+            value={department}
+            onValueChange={(v) => setDepartment(v || ALL)}
+            items={{ [ALL]: 'All departments' }}
+          >
             <SelectTrigger className="w-72">
               <SelectValue />
             </SelectTrigger>

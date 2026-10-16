@@ -189,6 +189,7 @@ export function ApplyLoan() {
               <Label>Repayment period</Label>
               <Select
                 value={duration ? String(duration) : ''}
+                items={Object.fromEntries(monthOptions.map((m) => [String(m), `${m} month${m === 1 ? '' : 's'}`]))}
                 onValueChange={(v) => {
                   setValue('duration_months', Number(v))
                   clearErrors('duration_months')

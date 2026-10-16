@@ -43,7 +43,14 @@ export function ApplicationList() {
         <div className="w-64">
           <SearchInput value={search} onChange={setSearch} placeholder="Search applications..." />
         </div>
-        <Select value={statusFilter || 'ALL'} onValueChange={(v) => setStatusFilter(v || '')}>
+        <Select
+          value={statusFilter || 'ALL'}
+          onValueChange={(v) => setStatusFilter(v || '')}
+          items={{
+            ALL: 'All Status', PENDING: 'Pending', UNDER_REVIEW: 'Under Review',
+            APPROVED: 'Approved', REJECTED: 'Rejected', CANCELLED: 'Cancelled',
+          }}
+        >
           <SelectTrigger className="w-44">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -59,6 +66,7 @@ export function ApplicationList() {
         <Select
           value={sortOrder}
           onValueChange={(v) => setSortOrder((v || 'priority') as typeof sortOrder)}
+          items={{ priority: 'Priority (first-time first)', '-application_date': 'Newest first' }}
         >
           <SelectTrigger className="w-56">
             <SelectValue />
