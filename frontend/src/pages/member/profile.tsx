@@ -146,6 +146,7 @@ export function MemberProfile() {
                   <div>
                     <p className="text-xs text-muted-foreground">Department</p>
                     <p className="text-sm font-medium">{profile.department}</p>
+                    {profile.school && <p className="text-xs text-muted-foreground">{profile.school}</p>}
                   </div>
                 </div>
               </div>

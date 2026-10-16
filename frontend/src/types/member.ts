@@ -12,7 +12,6 @@ export interface Member {
   phone_number: string
   address: string
   department: string
-  /** Worked out from the department */
   school: string
   employment_status: EmploymentStatus
   membership_status: MembershipStatus
@@ -33,7 +32,6 @@ export interface MemberListItem {
   full_name: string
   email: string
   department: string
-  /** Worked out from the department */
   school: string
   employment_status: EmploymentStatus
   membership_status: MembershipStatus
@@ -53,6 +51,7 @@ export interface MemberCreateRequest {
   nrc_number: string
   phone_number: string
   address: string
+  school: string
   department: string
   employment_status: EmploymentStatus
 }
@@ -67,6 +66,7 @@ export interface MemberSignupRequest {
   nrc_number: string
   phone_number: string
   address: string
+  school: string
   department: string
   employment_status: EmploymentStatus
 }
@@ -81,6 +81,7 @@ export interface MemberUpdateRequest {
   nrc_number?: string
   phone_number?: string
   address?: string
+  school?: string
   department?: string
   employment_status?: EmploymentStatus
   membership_status?: MembershipStatus

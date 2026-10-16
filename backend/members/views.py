@@ -24,16 +24,29 @@ from .serializers import (
 
 
 class SchoolListView(APIView):
-    """UNZA schools with their departments, for dropdowns."""
+    """Schools/faculties and departments that members have entered.
 
-    permission_classes = [AllowAny]
+    Used for the report filter dropdowns, so they only offer categories that
+    exist in the member records.
+    """
+
+    permission_classes = [IsStaffUser]
 
     def get(self, request):
-        from .schools import UNZA_SCHOOLS
-
+        groups = {}
+        rows = (
+            Member.objects.exclude(school='')
+            .values_list('school', 'department')
+            .distinct()
+            .order_by('school', 'department')
+        )
+        for school, department in rows:
+            groups.setdefault(school, [])
+            if department and department not in groups[school]:
+                groups[school].append(department)
         return Response([
             {'school': school, 'departments': departments}
-            for school, departments in UNZA_SCHOOLS.items()
+            for school, departments in groups.items()
         ])
 
 

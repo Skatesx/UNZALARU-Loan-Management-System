@@ -368,9 +368,9 @@ def _membership_report(params):
 
     filtered = Member.objects.all()
     if params.get('school'):
-        filtered = filtered.filter(school=params['school'])
+        filtered = filtered.filter(school__iexact=params['school'])
     if params.get('department'):
-        filtered = filtered.filter(department=params['department'])
+        filtered = filtered.filter(department__iexact=params['department'])
     if params.get('status'):
         filtered = filtered.filter(membership_status=params['status'])
 

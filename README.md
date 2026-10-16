@@ -50,9 +50,9 @@ cd frontend && npm run build                          # typecheck + build
 
 ### Member signup and approval
 
-1. Visitor registers at `/signup` (name, email, **MAN number**, NRC, department, password).
-   The department is chosen from the UNZA list; the member's **school** is worked out from it
-   (edit the list in `backend/members/schools.py`).
+1. Visitor registers at `/signup` (name, email, **MAN number**, NRC, school / faculty, department, password).
+   Members type their own school / faculty and department; spacing is tidied and an existing
+   spelling is reused when the same name is entered with different capitals, so reports group them together.
    The MAN number (UNZA staff number) must be unique and becomes the member's ID.
 2. Account is created immediately and **can sign in**, but the membership is **PENDING**:
    - A banner on every member page shows "membership pending approval".
@@ -109,7 +109,8 @@ An admin may **override** a failed checklist by supplying a reason at approval t
 
 **Reports → Membership** (admins and supervisors) lists members with totals by
 membership status, school and department. Filter by membership (defaults to
-current, i.e. active, members), **school** and **department**; CSV and PDF
+current, i.e. active, members), **school** and **department** - the dropdowns list
+the schools and departments members have entered; CSV and PDF
 exports use the same filters. All report pages now have tabs to move between
 the Loans, Repayments, Defaulters, Eligibility and Membership reports.
 
@@ -133,7 +134,7 @@ has been removed from all APIs and UI in line with the updated requirements.
 - `POST /api/loan-applications/`, `POST /api/loan-applications/{id}/approve/` (body may include `override_reason`), `GET /api/loan-applications/{id}/criteria/`
 - `POST /api/repayments/` with `payment_mode`
 - `GET/PUT /api/admin/config/system/` — system configuration (criteria live here)
-- `GET /api/members/schools/` — UNZA schools and their departments
+- `GET /api/members/schools/` — schools/faculties and departments members have entered (staff only; report filters)
 - `GET /api/reports/membership/?status=&school=&department=`, `.../membership/export/{csv|pdf}/`
 
 Full schema: `http://localhost:8000/api/docs/` (Swagger) or `/api/redoc/`.

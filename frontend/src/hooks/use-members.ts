@@ -175,7 +175,7 @@ export interface SchoolDepartments {
   departments: string[]
 }
 
-/** UNZA schools and their departments (public; used by signup and report filters). */
+/** Schools/faculties and departments that members have entered (report filters, staff only). */
 export function useSchools() {
   return useQuery({
     queryKey: ['schools'],

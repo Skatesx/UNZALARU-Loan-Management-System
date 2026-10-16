@@ -65,13 +65,12 @@ class Command(BaseCommand):
             member.member_id = man_number
             member.save(update_fields=['member_id'])
 
-    def use_listed_department(self, member, department):
-        """Move demo members off departments that aren't in the UNZA list."""
-        from members.schools import canonical_department
-
-        if canonical_department(member.department) is None:
+    def use_demo_school(self, member, school, department):
+        """Give demo members created before the school field a school and department."""
+        if not member.school:
+            member.school = school
             member.department = department
-            member.save(update_fields=['department'])
+            member.save(update_fields=['school', 'department'])
 
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
@@ -210,13 +209,21 @@ class Command(BaseCommand):
         self.stdout.write('Configured default loan approval criteria')
 
         # Create member users
-        # Departments from the UNZA list (members/schools.py), across several schools
+        # (school / faculty, department) as members would enter them
         departments = [
-            'Computer Science', 'Mathematics and Statistics', 'Physics',
-            'Chemistry', 'Biological Sciences', 'Economics',
-            'Business Administration', 'Civil and Environmental Engineering',
-            'Public Law', 'Internal Medicine', 'Mathematics and Science Education',
-            'History', 'Nursing', 'Mining Engineering',
+            ('School of Natural Sciences', 'Computer Science'),
+            ('School of Natural Sciences', 'Mathematics and Statistics'),
+            ('School of Natural Sciences', 'Physics'),
+            ('School of Natural Sciences', 'Chemistry'),
+            ('School of Humanities and Social Sciences', 'Economics'),
+            ('School of Humanities and Social Sciences', 'History'),
+            ('Graduate School of Business', 'Business Administration'),
+            ('School of Engineering', 'Civil and Environmental Engineering'),
+            ('School of Law', 'Public Law'),
+            ('School of Medicine', 'Internal Medicine'),
+            ('School of Education', 'Mathematics and Science Education'),
+            ('School of Nursing Sciences', 'Nursing'),
+            ('School of Mines', 'Mining Engineering'),
         ]
         employment_statuses = ['PERMANENT', 'CONTRACT', 'PART_TIME']
 
@@ -280,13 +287,14 @@ class Command(BaseCommand):
                     'nrc_number': f'NRC-{random.randint(100000, 999999)}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} University Road, Lusaka',
-                    'department': random.choice(departments),
+                    'school': departments[i % len(departments)][0],
+                    'department': departments[i % len(departments)][1],
                     'employment_status': emp_status,
                     'membership_status': 'ACTIVE',
                 }
             )
             self.use_man_number(member, str(10230 + i * 7))
-            self.use_listed_department(member, departments[i % len(departments)])
+            self.use_demo_school(member, *departments[i % len(departments)])
             members.append(member)
 
         self.stdout.write(self.style.SUCCESS(f'Created {len(members)} members'))
@@ -294,11 +302,11 @@ class Command(BaseCommand):
         # Create pending members awaiting approval
         pending_members = []
         pending_names = [
-            ('Chanda', 'Mwansa', 'Library and Information Science'),
-            ('Mutale', 'Chewe', 'Clinical Studies'),
-            ('Bupe', 'Chisanga', 'Geomatic Engineering'),
+            ('Chanda', 'Mwansa', 'School of Education', 'Library and Information Science'),
+            ('Mutale', 'Chewe', 'School of Veterinary Medicine', 'Clinical Studies'),
+            ('Bupe', 'Chisanga', 'School of Engineering', 'Geomatic Engineering'),
         ]
-        for idx, (first, last, dept) in enumerate(pending_names):
+        for idx, (first, last, school, dept) in enumerate(pending_names):
             email = f'{first.lower()}.{last.lower()}@unzalaru.com'
             user, created = User.objects.get_or_create(
                 email=email,
@@ -320,13 +328,14 @@ class Command(BaseCommand):
                     'nrc_number': f'NRC-P{100000 + idx}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
+                    'school': school,
                     'department': dept,
                     'employment_status': 'CONTRACT',
                     'membership_status': 'PENDING',
                 }
             )
             self.use_man_number(member, str(30101 + idx))
-            self.use_listed_department(member, dept)
+            self.use_demo_school(member, school, dept)
             pending_members.append(member)
 
         self.stdout.write(self.style.SUCCESS(

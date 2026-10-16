@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { DepartmentSelect } from '@/components/shared/department-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
@@ -106,12 +105,13 @@ export function MemberCreate() {
                   {errors.phone_number && <p className="text-sm text-destructive">{errors.phone_number.message}</p>}
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="school">School / Faculty *</Label>
+                  <Input id="school" placeholder="e.g. School of Natural Sciences" {...register('school')} />
+                  {errors.school && <p className="text-sm text-destructive">{errors.school.message}</p>}
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="department">Department *</Label>
-                  <DepartmentSelect
-                    id="department"
-                    value={watch('department')}
-                    onChange={(d) => setValue('department', d, { shouldValidate: true })}
-                  />
+                  <Input id="department" {...register('department')} />
                   {errors.department && <p className="text-sm text-destructive">{errors.department.message}</p>}
                 </div>
                 <div className="space-y-2">

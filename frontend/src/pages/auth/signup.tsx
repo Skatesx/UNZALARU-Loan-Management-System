@@ -8,7 +8,6 @@ import { AuthStoryPanel, AuthBrandRow } from '@/components/auth/story-panel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { DepartmentSelect } from '@/components/shared/department-select'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -42,7 +41,7 @@ const EMPLOYMENT_OPTIONS = [
 /* Fields validated before leaving each step (keys of SignupFormData). */
 const STEP_FIELDS: Array<Array<keyof SignupFormData>> = [
   ['first_name', 'last_name', 'email'],
-  ['member_id', 'nrc_number', 'phone_number', 'department', 'employment_status', 'address'],
+  ['member_id', 'nrc_number', 'phone_number', 'school', 'department', 'employment_status', 'address'],
   ['password', 'confirm_password'],
 ]
 
@@ -156,6 +155,7 @@ export function SignupPage() {
         nrc_number: data.nrc_number,
         phone_number: data.phone_number,
         address: data.address,
+        school: data.school,
         department: data.department,
         employment_status: data.employment_status,
       })
@@ -298,15 +298,18 @@ export function SignupPage() {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="school">School / Faculty</Label>
+                      <Input id="school" className="h-10" placeholder="e.g. School of Natural Sciences" {...register('school')} />
+                      {errors.school && (
+                        <p className="text-sm text-destructive">{errors.school.message}</p>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="department">Department</Label>
-                        <DepartmentSelect
-                          id="department"
-                          className="w-full h-10"
-                          value={watch('department')}
-                          onChange={(d) => setValue('department', d, { shouldValidate: true })}
-                        />
+                        <Input id="department" className="h-10" placeholder="e.g. Computer Science" {...register('department')} />
                         {errors.department && (
                           <p className="text-sm text-destructive">{errors.department.message}</p>
                         )}

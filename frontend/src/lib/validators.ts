@@ -24,6 +24,7 @@ export const signupSchema = z.object({
   nrc_number: z.string().min(1, 'NRC number is required'),
   phone_number: z.string().min(1, 'Phone number is required'),
   address: z.string().min(1, 'Address is required'),
+  school: z.string().trim().min(1, 'School / faculty is required'),
   department: z.string().min(1, 'Department is required'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
@@ -56,6 +57,7 @@ export const memberCreateSchema = z.object({
   nrc_number: z.string().min(1, 'NRC number is required'),
   phone_number: z.string().min(1, 'Phone number is required'),
   address: z.string().min(1, 'Address is required'),
+  school: z.string().trim().min(1, 'School / faculty is required'),
   department: z.string().min(1, 'Department is required'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),

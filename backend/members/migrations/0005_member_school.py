@@ -3,18 +3,6 @@
 from django.db import migrations, models
 
 
-def fill_schools(apps, schema_editor):
-    """Set each existing member's school from their department."""
-    from members.schools import school_for_department
-
-    Member = apps.get_model('members', 'Member')
-    for member in Member.objects.all():
-        school = school_for_department(member.department)
-        if school:
-            member.school = school
-            member.save(update_fields=['school'])
-
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -25,7 +13,10 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='member',
             name='school',
-            field=models.CharField(blank=True, db_index=True, max_length=120),
+            field=models.CharField(
+                blank=True, db_index=True, max_length=120,
+                help_text='School or faculty, as entered by the member',
+                verbose_name='school / faculty',
+            ),
         ),
-        migrations.RunPython(fill_schools, migrations.RunPython.noop),
     ]

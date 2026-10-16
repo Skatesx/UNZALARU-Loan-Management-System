@@ -71,7 +71,7 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(member=member)
         if self.request.query_params.get('ordering') == 'priority':
             queryset = queryset.order_by(
-                'annotated_previous_applications', 'application_date'
+                'annotated_previous_applications', 'application_date', 'pk'
             )
         # OrderingFilter ignores the unknown 'priority' value, so this order stands
         return queryset

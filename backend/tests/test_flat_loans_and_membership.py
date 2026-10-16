@@ -7,7 +7,6 @@ from rest_framework import status
 from loans.models import LoanType
 from loans.services import LoanApplicationService, LoanCalculationService
 from members.models import Member
-from members.schools import school_for_department
 
 
 @pytest.fixture
@@ -73,56 +72,71 @@ class TestFlatLoan:
         assert sum(s.expected_amount for s in loan.schedules.all()) == Decimal('11000.00')
 
 
+SIGNUP = {
+    'email': 'school@test.com', 'first_name': 'S', 'last_name': 'F',
+    'password': 'securepass123', 'nrc_number': 'NRC-SCHOOL',
+    'phone_number': '+260700000000', 'address': 'A',
+    'department': 'Computer Science', 'employment_status': 'PERMANENT',
+}
+
+
 @pytest.mark.django_db
 class TestSchools:
-    def test_school_comes_from_department(self, member):
-        member.department = 'Computer Science'
-        member.save()
-        assert member.school == 'School of Natural Sciences'
-        member.department = 'Public Law'
-        member.save(update_fields=['department'])
-        member.refresh_from_db()
-        assert member.school == 'School of Law'
+    """Members type their own school/faculty; reports group by what they entered."""
 
-    def test_unknown_department_has_no_school(self):
-        assert school_for_department('Basket Weaving') == ''
-
-    def test_schools_endpoint_is_public(self, client):
-        response = client.get('/api/members/schools/')
-        assert response.status_code == status.HTTP_200_OK
-        natural = next(s for s in response.json() if s['school'] == 'School of Natural Sciences')
-        assert 'Computer Science' in natural['departments']
-
-    def test_signup_rejects_unlisted_department(self, client):
-        response = client.post('/api/members/signup/', {
-            'member_id': '55501', 'email': 'dept@test.com', 'first_name': 'D',
-            'last_name': 'E', 'password': 'securepass123', 'nrc_number': 'NRC-DEPT',
-            'phone_number': '+260700000000', 'address': 'A',
-            'department': 'Basket Weaving', 'employment_status': 'PERMANENT',
-        }, content_type='application/json')
+    def test_signup_requires_school(self, client):
+        response = client.post(
+            '/api/members/signup/', {**SIGNUP, 'member_id': '55501'},
+            content_type='application/json',
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'department' in response.json()
+        assert 'school' in response.json()
 
-    def test_signup_normalises_department_and_sets_school(self, client):
+    def test_any_school_name_is_accepted(self, client):
         response = client.post('/api/members/signup/', {
-            'member_id': '55502', 'email': 'dept2@test.com', 'first_name': 'D',
-            'last_name': 'E', 'password': 'securepass123', 'nrc_number': 'NRC-DEPT2',
-            'phone_number': '+260700000000', 'address': 'A',
-            'department': 'computer science', 'employment_status': 'PERMANENT',
+            **SIGNUP, 'member_id': '55502', 'school': 'Directorate of Research',
+            'department': 'Grants Office',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
         new = Member.objects.get(member_id='55502')
-        assert new.department == 'Computer Science'
+        assert new.school == 'Directorate of Research'
+        assert new.department == 'Grants Office'
+
+    def test_spelling_matches_existing_entries(self, client, member):
+        member.school = 'School of Natural Sciences'
+        member.department = 'Computer Science'
+        member.save()
+        response = client.post('/api/members/signup/', {
+            **SIGNUP, 'member_id': '55503',
+            'school': '  school of natural   sciences ', 'department': 'computer science',
+        }, content_type='application/json')
+        assert response.status_code == status.HTTP_201_CREATED
+        new = Member.objects.get(member_id='55503')
         assert new.school == 'School of Natural Sciences'
+        assert new.department == 'Computer Science'
+
+    def test_filter_options_come_from_members(self, auth_client_admin, member, pending_member):
+        member.school, member.department = 'School of Law', 'Public Law'
+        member.save()
+        pending_member.school, pending_member.department = 'School of Law', 'Private Law'
+        pending_member.save()
+        response = auth_client_admin.get('/api/members/schools/')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == [
+            {'school': 'School of Law', 'departments': ['Private Law', 'Public Law']},
+        ]
+
+    def test_filter_options_are_staff_only(self, auth_client_member, member):
+        assert auth_client_member.get('/api/members/schools/').status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db
 class TestMembershipReport:
     @pytest.fixture
     def staff_members(self, member, pending_member):
-        member.department = 'Computer Science'  # School of Natural Sciences, ACTIVE
+        member.school, member.department = 'School of Natural Sciences', 'Computer Science'  # ACTIVE
         member.save()
-        pending_member.department = 'Public Law'  # School of Law, PENDING
+        pending_member.school, pending_member.department = 'School of Law', 'Public Law'  # PENDING
         pending_member.save()
         return member, pending_member
 
@@ -136,6 +150,10 @@ class TestMembershipReport:
 
     def test_filters(self, auth_client_admin, staff_members):
         member, _ = staff_members
+        # Filters ignore capitals
+        assert auth_client_admin.get(
+            '/api/reports/membership/', {'school': 'school of law'}
+        ).json()['total'] == 1
         by_school = auth_client_admin.get(
             '/api/reports/membership/', {'school': 'School of Natural Sciences'}
         ).json()

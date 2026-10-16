@@ -5,7 +5,6 @@ from rest_framework import serializers
 from users.serializers import UserSerializer
 
 from .models import Member
-from .schools import canonical_department
 
 MAN_NUMBER_PATTERN = re.compile(r'^[A-Z0-9-]{3,20}$')
 
@@ -24,12 +23,31 @@ def validate_man_number(value):
     return value
 
 
-def validate_department(value):
-    """Departments must come from the UNZA list so members can be grouped by school."""
-    department = canonical_department(value)
-    if department is None:
-        raise serializers.ValidationError('Select a department from the list')
-    return department
+def tidy_group_name(field, value):
+    """Clean up a school or department name so members group together in reports.
+
+    Extra spaces are removed, and if another member already entered the same
+    name with different capitals, their spelling is reused.
+    """
+    value = ' '.join((value or '').split())
+    if not value:
+        raise serializers.ValidationError('This field may not be blank.')
+    existing = (
+        Member.objects.filter(**{f'{field}__iexact': value})
+        .values_list(field, flat=True)
+        .first()
+    )
+    return existing or value
+
+
+class GroupFieldsMixin:
+    """Shared validation for the school and department fields."""
+
+    def validate_school(self, value):
+        return tidy_group_name('school', value)
+
+    def validate_department(self, value):
+        return tidy_group_name('department', value)
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -50,7 +68,7 @@ class MemberSerializer(serializers.ModelSerializer):
             'full_name', 'email', 'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'member_id', 'school', 'approved_by', 'approval_date',
+            'id', 'member_id', 'approved_by', 'approval_date',
             'created_at', 'updated_at',
         ]
 
@@ -71,7 +89,7 @@ class MemberListSerializer(serializers.ModelSerializer):
         ]
 
 
-class MemberCreateSerializer(serializers.ModelSerializer):
+class MemberCreateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
     """Serializer for creating members with user account."""
 
     member_id = serializers.CharField(max_length=20)
@@ -86,14 +104,12 @@ class MemberCreateSerializer(serializers.ModelSerializer):
         fields = [
             'member_id', 'email', 'username', 'first_name', 'last_name',
             'password', 'nrc_number', 'phone_number', 'address',
-            'department', 'employment_status',
+            'school', 'department', 'employment_status',
         ]
+        extra_kwargs = {'school': {'required': True, 'allow_blank': False}}
 
     def validate_member_id(self, value):
         return validate_man_number(value)
-
-    def validate_department(self, value):
-        return validate_department(value)
 
     def create(self, validated_data):
         from users.models import User
@@ -117,7 +133,7 @@ class MemberCreateSerializer(serializers.ModelSerializer):
         return member
 
 
-class MemberSelfSignupSerializer(serializers.ModelSerializer):
+class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
     """Serializer for public member self-registration.
 
     Creates a MEMBER user and a PENDING member profile awaiting admin approval.
@@ -133,15 +149,13 @@ class MemberSelfSignupSerializer(serializers.ModelSerializer):
         model = Member
         fields = [
             'member_id', 'email', 'first_name', 'last_name', 'password',
-            'nrc_number', 'phone_number', 'address', 'department',
+            'nrc_number', 'phone_number', 'address', 'school', 'department',
             'employment_status',
         ]
+        extra_kwargs = {'school': {'required': True, 'allow_blank': False}}
 
     def validate_member_id(self, value):
         return validate_man_number(value)
-
-    def validate_department(self, value):
-        return validate_department(value)
 
     def validate_email(self, value):
         from users.models import User
@@ -176,18 +190,15 @@ class MemberSelfSignupSerializer(serializers.ModelSerializer):
         return Member.objects.create(user=user, **validated_data)
 
 
-class MemberUpdateSerializer(serializers.ModelSerializer):
+class MemberUpdateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
     """Serializer for updating member profile."""
 
     class Meta:
         model = Member
         fields = [
-            'nrc_number', 'phone_number', 'address', 'department',
+            'nrc_number', 'phone_number', 'address', 'school', 'department',
             'employment_status', 'membership_status', 'account_status',
         ]
-
-    def validate_department(self, value):
-        return validate_department(value)
 
 
 class MemberSelfUpdateSerializer(serializers.ModelSerializer):

@@ -113,9 +113,11 @@ class LoanApplication(models.Model):
         if annotated is not None:
             return annotated
         return (
-            LoanApplication.objects.filter(
-                member_id=self.member_id,
-                application_date__lt=self.application_date,
+            LoanApplication.objects.filter(member_id=self.member_id)
+            .filter(
+                # Ties (same timestamp) are broken by creation order
+                models.Q(application_date__lt=self.application_date)
+                | models.Q(application_date=self.application_date, pk__lt=self.pk)
             )
             .exclude(status='CANCELLED')
             .count()
@@ -129,9 +131,14 @@ class LoanApplication(models.Model):
 def previous_applications_subquery():
     """Per-application count of the member's earlier, non-cancelled applications."""
     earlier = (
-        LoanApplication.objects.filter(
-            member_id=models.OuterRef('member_id'),
-            application_date__lt=models.OuterRef('application_date'),
+        LoanApplication.objects.filter(member_id=models.OuterRef('member_id'))
+        .filter(
+            # Ties (same timestamp) are broken by creation order
+            models.Q(application_date__lt=models.OuterRef('application_date'))
+            | models.Q(
+                application_date=models.OuterRef('application_date'),
+                pk__lt=models.OuterRef('pk'),
+            )
         )
         .exclude(status='CANCELLED')
         .order_by()

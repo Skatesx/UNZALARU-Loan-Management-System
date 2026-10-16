@@ -11,7 +11,7 @@ router.register('', MemberViewSet, basename='member')
 urlpatterns = [
     # Public self-registration (no auth)
     path('signup/', MemberSignupView.as_view(), name='member-signup'),
-    # UNZA schools and departments (public: used by the signup form)
+    # Schools/faculties and departments entered by members (report filters)
     path('schools/', SchoolListView.as_view(), name='member-schools'),
     path('', include(router.urls)),
 ]
