@@ -42,23 +42,20 @@ class LoanCalculationService:
     def generate_installment_dates(start_date, months):
         """Generate monthly due dates starting from next month.
 
-        Clamps to the last valid day of short months (e.g. Jan 30 -> Feb 28),
-        so approvals on the 29th-31st no longer raise a ValueError.
+        Every date is counted from start_date, keeping its day of month and
+        clamping only within short months: a loan approved on Jan 31 is due
+        Feb 28, then Mar 31, Apr 30 - the due day never drifts permanently
+        earlier. Approvals on the 29th-31st no longer raise a ValueError.
         """
         import calendar
 
-        def add_one_month(d):
-            month_index = d.month - 1 + 1
-            year = d.year + month_index // 12
-            month = month_index % 12 + 1
-            day = min(d.day, calendar.monthrange(year, month)[1])
-            return d.replace(year=year, month=month, day=day)
-
         dates = []
-        current = start_date
-        for _ in range(months):
-            current = add_one_month(current)
-            dates.append(current)
+        for i in range(1, months + 1):
+            month_index = start_date.month - 1 + i
+            year = start_date.year + month_index // 12
+            month = month_index % 12 + 1
+            day = min(start_date.day, calendar.monthrange(year, month)[1])
+            dates.append(start_date.replace(year=year, month=month, day=day))
         return dates
 
     def calculate_loan(self, principal, annual_rate, months, interest_method):
@@ -255,6 +252,19 @@ class LoanApplicationService:
         schedule_service = RepaymentScheduleService()
         schedule_service.generate_schedule(loan)
 
+        AuditService.log_action(
+            user=approved_by,
+            action='APPROVED_LOAN',
+            entity_type='LoanApplication',
+            entity_id=application.application_id,
+            description=(
+                f'Approved application {application.application_id} for '
+                f'{application.member.full_name}: K{loan.principal} over '
+                f'{loan.duration_months} months (loan {loan.loan_id})'
+            ),
+            new_value={'loan_id': loan.loan_id, 'principal': str(loan.principal)},
+        )
+
         # Send notification
         NotificationService.notify_loan_approved(loan)
 
@@ -263,6 +273,7 @@ class LoanApplicationService:
     @transaction.atomic
     def reject_application(self, application, rejected_by, reason=''):
         """Reject a loan application."""
+        from audit.services import AuditService
         from notifications.services import NotificationService
 
         if application.status not in ['PENDING', 'UNDER_REVIEW']:
@@ -273,6 +284,17 @@ class LoanApplicationService:
         application.reviewed_by = rejected_by
         application.reviewed_at = timezone.now()
         application.save()
+
+        AuditService.log_action(
+            user=rejected_by,
+            action='REJECTED_LOAN',
+            entity_type='LoanApplication',
+            entity_id=application.application_id,
+            description=(
+                f'Rejected application {application.application_id} for '
+                f'{application.member.full_name}. Reason: {reason or "not provided"}'
+            ),
+        )
 
         # Send notification
         NotificationService.notify_loan_rejected(application, reason)

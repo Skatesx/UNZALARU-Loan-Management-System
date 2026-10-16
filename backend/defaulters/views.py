@@ -41,9 +41,14 @@ class DefaulterViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ['days_overdue', 'classification', 'last_checked']
 
     def get_queryset(self):
-        return DefaulterStatus.objects.select_related(
+        queryset = DefaulterStatus.objects.select_related(
             'member', 'member__user', 'loan', 'schedule'
         ).all()
+        # Installments that aren't overdue are tracked as CURRENT; they're not
+        # defaulters, so the list leaves them out unless explicitly asked for.
+        if self.action == 'list' and not self.request.query_params.get('classification'):
+            queryset = queryset.exclude(classification='CURRENT')
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'list':

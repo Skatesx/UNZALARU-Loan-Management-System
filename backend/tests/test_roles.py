@@ -221,7 +221,8 @@ class TestInstallmentDates:
         dates = LoanCalculationService.generate_installment_dates(
             datetime.date(2026, 1, 30), 2
         )
-        assert [str(d) for d in dates] == ['2026-02-28', '2026-03-28']
+        # Clamped in February, back to the original day in March
+        assert [str(d) for d in dates] == ['2026-02-28', '2026-03-30']
 
     def test_approvals_on_month_end_do_not_crash(self):
         dates = LoanCalculationService.generate_installment_dates(
