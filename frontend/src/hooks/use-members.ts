@@ -5,7 +5,6 @@ import type {
   MemberListItem,
   MemberCreateRequest,
   MemberUpdateRequest,
-  IncomeVerificationRequest,
 } from '@/types/member'
 import type { Loan } from '@/types/loan'
 import type { Repayment } from '@/types/repayment'
@@ -162,20 +161,6 @@ export function useRejectMember() {
   return useMutation({
     mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
       const response = await apiClient.post(`/members/${id}/reject/`, { reason })
-      return response.data as Member
-    },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['members'] })
-      queryClient.invalidateQueries({ queryKey: ['members', id] })
-    },
-  })
-}
-
-export function useVerifyIncome() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: IncomeVerificationRequest }) => {
-      const response = await apiClient.post(`/members/${id}/verify-income/`, data)
       return response.data as Member
     },
     onSuccess: (_, { id }) => {

@@ -52,15 +52,18 @@ class Command(BaseCommand):
             account_status='ACTIVE',
             approved_by=None,
             approval_date=None,
-            income_verified=False,
-            verified_income=None,
-            income_verified_by=None,
         )
         User.objects.filter(email__in=PENDING_MEMBER_EMAILS).update(is_active=True)
         self.stdout.write(self.style.WARNING(
             'Reset: removed existing applications, loans, repayments, '
             'notifications and audit entries'
         ))
+
+    def use_man_number(self, member, man_number):
+        """Move demo members created before MAN numbers off their old MBR- IDs."""
+        if member.member_id.startswith('MBR-'):
+            member.member_id = man_number
+            member.save(update_fields=['member_id'])
 
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
@@ -166,14 +169,15 @@ class Command(BaseCommand):
         # Create eligibility rules
         eligibility_rules = [
             {
-                'name': 'Income Score',
-                'factor': 'INCOME',
+                # Fewer earlier applications score higher: first-timers get priority
+                'name': 'Application History',
+                'factor': 'APPLICATION_HISTORY',
                 'weight': 30,
                 'thresholds': [
-                    {'min': 0, 'max': 3000, 'score': 20},
-                    {'min': 3001, 'max': 8000, 'score': 50},
-                    {'min': 8001, 'max': 15000, 'score': 75},
-                    {'min': 15001, 'max': None, 'score': 100},
+                    {'min': 0, 'max': 0, 'score': 100},
+                    {'min': 1, 'max': 1, 'score': 70},
+                    {'min': 2, 'max': 2, 'score': 40},
+                    {'min': 3, 'max': None, 'score': 10},
                 ],
             },
             {
@@ -289,23 +293,21 @@ class Command(BaseCommand):
                 user.set_password('password123')
                 user.save()
 
-            income = random.randint(3000, 25000)
             emp_status = random.choice(employment_statuses)
 
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
+                    'member_id': str(10230 + i * 7),  # demo MAN number
                     'nrc_number': f'NRC-{random.randint(100000, 999999)}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} University Road, Lusaka',
                     'department': random.choice(departments),
                     'employment_status': emp_status,
-                    'monthly_income': income,
                     'membership_status': 'ACTIVE',
-                    'income_verified': True,
-                    'verified_income': Decimal(income),
                 }
             )
+            self.use_man_number(member, str(10230 + i * 7))
             members.append(member)
 
         self.stdout.write(self.style.SUCCESS(f'Created {len(members)} members'))
@@ -335,16 +337,16 @@ class Command(BaseCommand):
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
+                    'member_id': str(30101 + idx),  # demo MAN number
                     'nrc_number': f'NRC-P{100000 + idx}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
                     'department': dept,
                     'employment_status': 'CONTRACT',
-                    'monthly_income': random.randint(4000, 12000),
                     'membership_status': 'PENDING',
-                    'income_verified': False,
                 }
             )
+            self.use_man_number(member, str(30101 + idx))
             pending_members.append(member)
 
         self.stdout.write(self.style.SUCCESS(
@@ -397,10 +399,6 @@ class Command(BaseCommand):
                         'employer': 'University of Zambia',
                         'position': random.choice(['Lecturer', 'Senior Lecturer', 'Professor', 'Researcher']),
                         'years': random.randint(1, 20),
-                    },
-                    income_info={
-                        'monthly_salary': float(member.monthly_income),
-                        'other_income': random.randint(0, 5000),
                     },
                     rejection_reason=(
                         'Member already has an active loan'

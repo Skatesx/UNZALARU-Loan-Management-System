@@ -112,19 +112,6 @@ class NotificationService:
         )
 
     @classmethod
-    def notify_income_verified(cls, member):
-        """Notify member that their income has been verified."""
-        cls.create(
-            user=member.user,
-            title='Income Verified',
-            message=(
-                f'Your monthly income of K{member.effective_income} has been '
-                f'verified by a UNZALARU administrator.'
-            ),
-            notification_type='STATUS_CHANGE',
-        )
-
-    @classmethod
     def notify_status_change(cls, user, title, message):
         """Generic status change notification."""
         cls.create(

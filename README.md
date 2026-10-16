@@ -50,13 +50,15 @@ cd frontend && npm run build                          # typecheck + build
 
 ### Member signup and approval
 
-1. Visitor registers at `/signup` (name, email, NRC, department, declared income, password).
+1. Visitor registers at `/signup` (name, email, **MAN number**, NRC, department, password).
+   The MAN number (UNZA staff number) must be unique and becomes the member's ID.
 2. Account is created immediately and **can sign in**, but the membership is **PENDING**:
    - A banner on every member page shows "membership pending approval".
    - Loan applications are blocked (API rejects with a clear message; the UI disables the form).
    - Profile, notifications, and loan/repayment history for existing loans remain visible.
 3. Admin approves or rejects from **Members** (list filter `Pending` → inline Approve) or the member detail page; the member is notified either way.
-4. Admin verifies income on the member detail page (sets verified income + verifier); the loan approval criteria consume the verified income.
+
+Income is not collected or verified anywhere in the system.
 
 ### Loan approval criteria (configurable)
 
@@ -68,15 +70,26 @@ application detail page. Thresholds are stored in the `SystemConfig` table under
 | Criterion | Default |
 |---|---|
 | Minimum eligibility score (0–100) | 60 |
-| Max installment-to-income ratio | 0.5 |
 | Max simultaneous active loans | 1 |
-| Require income verification | yes |
 | Reject if any overdue installment | yes |
 | Reject if classified defaulter | yes |
 | Require active membership | yes |
 | Minimum membership age (days) | 0 (disabled) |
 
 The eligibility score is computed automatically (on the fly if not yet assessed).
+
+### First-time applicant priority
+
+The system counts how many times each member has applied for a loan (cancelled
+applications don't count) and gives **first-time applicants priority**:
+
+- **Members** list and member pages show *Times applied*.
+- **Loan Applications** list shows *Applied Before* (a **First-time** badge for 0)
+  and sorts by **Priority (first-time first)** by default (`?ordering=priority`:
+  fewest earlier applications first, then oldest).
+- The approval checklist includes a non-blocking *Loan application history* line.
+- The eligibility score's **Application History** factor (30%) scores 0 earlier
+  applications 100, 1 → 70, 2 → 40, 3 or more → 10.
 An admin may **override** a failed checklist by supplying a reason at approval time
 (required by the UI); the reason is stored on the application and a dedicated
 `OVERRIDDEN_APPROVAL_CRITERIA` audit entry is written.
@@ -90,14 +103,14 @@ Every repayment records a payment mode: `CASH`, `BANK_TRANSFER`, `MOBILE_MONEY`,
 ### Membership tracking
 
 Member accounts track `membership_status` (`PENDING` → `ACTIVE`, or `INACTIVE` when a signup is rejected),
-income verification state, and sign-in/loan activity. The `date_joined` user field
+their loan application count, and sign-in/loan activity. The `date_joined` user field
 has been removed from all APIs and UI in line with the updated requirements.
 
 ## API overview
 
 - `POST /api/members/signup/` — public self-registration
 - `GET/PATCH /api/members/me/`, `GET /api/members/me/profile/` — self-service
-- `POST /api/members/{id}/approve/`, `.../reject/`, `.../verify-income/` — admin actions
+- `POST /api/members/{id}/approve/`, `.../reject/` — admin actions
 - `POST /api/loan-applications/`, `POST /api/loan-applications/{id}/approve/` (body may include `override_reason`), `GET /api/loan-applications/{id}/criteria/`
 - `POST /api/repayments/` with `payment_mode`
 - `GET/PUT /api/admin/config/system/` — system configuration (criteria live here)

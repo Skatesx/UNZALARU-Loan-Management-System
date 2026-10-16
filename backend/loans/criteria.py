@@ -6,19 +6,13 @@ The admin's final decision always supersedes the criteria result — criteria
 serve as guardrails and recommendations, and every override is audit-logged.
 """
 
-from decimal import Decimal
-
 from config_app.models import SystemConfig
 
 DEFAULT_CRITERIA = {
     # Application must have at least this eligibility score (0-100).
     'min_eligibility_score': 60,
-    # Installment must not exceed this share of monthly income (0-1).
-    'max_installment_income_ratio': 0.5,
     # Maximum number of simultaneously ACTIVE loans allowed per member.
     'max_active_loans': 1,
-    # Member must have income verified by an administrator.
-    'require_income_verification': True,
     # Member must not have overdue installments on other loans.
     'reject_if_any_overdue': True,
     # Member must not currently be classified DEFAULTER / SEVERE_DEFAULTER.
@@ -73,6 +67,7 @@ def evaluate(application):
     from loans.models import Loan
 
     member = application.member
+    loan_type = application.loan_type
     criteria = get_criteria()
     results = []
 
@@ -102,37 +97,17 @@ def evaluate(application):
         'Score is calculated automatically from configured rules',
     )
 
-    # 2. Installment-to-income ratio (affordability)
-    ratio_max = float(criteria['max_installment_income_ratio'])
-    income = float(member.effective_income or 0)
-    loan_type = application.loan_type
-    if income > 0:
-        if loan_type.interest_method == 'FLAT':
-            interest = (
-                Decimal(str(application.requested_amount))
-                * (loan_type.interest_rate / Decimal('100'))
-                * (Decimal(str(application.duration_months)) / Decimal('12'))
-            )
-        else:
-            from loans.services import LoanCalculationService
-            interest = LoanCalculationService.calculate_reducing_balance_interest(
-                application.requested_amount,
-                loan_type.interest_rate,
-                application.duration_months,
-            )
-        total = Decimal(str(application.requested_amount)) + interest
-        installment = float(total / Decimal(str(application.duration_months)))
-        ratio = installment / income
-    else:
-        installment = 0
-        ratio = float('inf')
+    # 2. Application history: shown so first-time applicants can be prioritised.
+    # It never blocks approval; the eligibility score already rewards first-timers.
+    previous = application.previous_applications
     add(
-        'max_installment_income_ratio',
-        'Monthly installment within income limit',
-        ratio <= ratio_max,
-        round(ratio, 4) if ratio != float('inf') else None,
-        ratio_max,
-        f'Estimated installment K{installment:,.2f} vs income K{income:,.2f}',
+        'application_history',
+        'Loan application history',
+        True,
+        previous,
+        'First-time applicants get priority',
+        'First-time applicant (priority)' if previous == 0 else
+        f'Applied {previous} time{"s" if previous != 1 else ""} before',
     )
 
     # 3. Active loans cap
@@ -149,17 +124,7 @@ def evaluate(application):
         'Counted across all loan types',
     )
 
-    # 4. Income verification
-    if criteria['require_income_verification']:
-        add(
-            'require_income_verification',
-            'Income verified by administrator',
-            member.income_verified,
-            'Verified' if member.income_verified else 'Not verified',
-            'Required',
-        )
-
-    # 5. No overdue installments anywhere
+    # 4. No overdue installments anywhere
     if criteria['reject_if_any_overdue']:
         has_overdue = False
         for loan in Loan.objects.filter(member=member, status='ACTIVE'):
@@ -176,7 +141,7 @@ def evaluate(application):
             'Required',
         )
 
-    # 6. Not a defaulter
+    # 5. Not a defaulter
     if criteria['reject_if_defaulter']:
         worst = _worst_defaulter_classification(member)
         blocked = worst in ('DEFAULTER', 'SEVERE_DEFAULTER')
@@ -188,7 +153,7 @@ def evaluate(application):
             'Below DEFAULTER',
         )
 
-    # 7. Active membership
+    # 6. Active membership
     if criteria['require_active_membership']:
         add(
             'require_active_membership',
@@ -199,7 +164,7 @@ def evaluate(application):
             'New signups must be approved by an administrator first',
         )
 
-    # 8. Minimum membership age
+    # 7. Minimum membership age
     min_days = int(criteria.get('min_membership_days', 0))
     if min_days > 0:
         from django.utils import timezone

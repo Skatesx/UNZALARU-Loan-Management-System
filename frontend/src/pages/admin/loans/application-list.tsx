@@ -16,8 +16,10 @@ export function ApplicationList() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  // First-time applicants get priority, so they are listed first by default
+  const [sortOrder, setSortOrder] = useState<'priority' | '-application_date'>('priority')
 
-  const params: Record<string, unknown> = { page, page_size: 20 }
+  const params: Record<string, unknown> = { page, page_size: 20, ordering: sortOrder }
   if (search) params.search = search
   if (statusFilter && statusFilter !== 'ALL') params.status = statusFilter
 
@@ -54,6 +56,18 @@ export function ApplicationList() {
             <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={sortOrder}
+          onValueChange={(v) => setSortOrder((v || 'priority') as typeof sortOrder)}
+        >
+          <SelectTrigger className="w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="priority">Priority (first-time first)</SelectItem>
+            <SelectItem value="-application_date">Newest first</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {applications.length === 0 ? (
@@ -67,6 +81,7 @@ export function ApplicationList() {
                   <tr className="border-b bg-muted/50">
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application ID</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied Before</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan Type</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
@@ -93,6 +108,17 @@ export function ApplicationList() {
                           <p className="font-medium">{app.member_name}</p>
                           <p className="text-xs text-muted-foreground">{app.member_id}</p>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {app.is_first_time_applicant ? (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/25">
+                            First-time
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {app.previous_applications} time{app.previous_applications === 1 ? '' : 's'}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">{app.loan_type_name}</td>
                       <td className="px-4 py-3 font-medium">{formatCurrency(app.requested_amount)}</td>

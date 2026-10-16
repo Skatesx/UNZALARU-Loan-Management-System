@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useMember, useMemberLoanHistory, useMemberRepaymentHistory, useApproveMember, useRejectMember, useVerifyIncome } from '@/hooks/use-members'
+import { useMember, useMemberLoanHistory, useMemberRepaymentHistory, useApproveMember, useRejectMember } from '@/hooks/use-members'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -8,8 +7,6 @@ import { ErrorState } from '@/components/shared/error-state'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { formatCurrency, formatDateTime } from '@/lib/formatters'
 import {
   Mail,
@@ -17,8 +14,6 @@ import {
   Building,
   Calendar,
   CreditCard,
-  BadgeCheck,
-  Clock,
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -35,9 +30,6 @@ export function MemberDetail() {
   const { data: repaymentHistory } = useMemberRepaymentHistory(memberId)
   const approveMember = useApproveMember()
   const rejectMember = useRejectMember()
-  const verifyIncome = useVerifyIncome()
-
-  const [incomeInput, setIncomeInput] = useState('')
 
   if (isLoading) return <LoadingSkeleton type="detail" />
   if (error) return <ErrorState message="Failed to load member details" onRetry={() => refetch()} />
@@ -49,7 +41,7 @@ export function MemberDetail() {
     <div>
       <PageHeader
         title={member.full_name}
-        description={`Member ID: ${member.member_id}`}
+        description={`MAN Number: ${member.member_id}`}
         actions={
           <StatusBadge status={member.membership_status} />
         }
@@ -122,65 +114,14 @@ export function MemberDetail() {
                       {member.employment_status.replace(/_/g, ' ').toLowerCase()}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Declared Monthly Income</p>
-                    <p className="text-sm font-bold text-primary">
-                      {formatCurrency(member.monthly_income)}
-                    </p>
-                  </div>
                   <div className="border-t pt-3">
-                    <p className="text-xs text-muted-foreground mb-1">Income Verification</p>
-                    {member.income_verified ? (
-                      <p className="text-sm font-medium flex items-center gap-1.5 text-primary">
-                        <BadgeCheck className="w-4 h-4" />
-                        Verified
-                        {member.verified_income != null &&
-                          ` — ${formatCurrency(member.verified_income)}`}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-amber-600 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" /> Not verified
+                    <p className="text-xs text-muted-foreground">Times applied for a loan</p>
+                    <p className="text-sm font-bold text-primary">{member.application_count}</p>
+                    {member.application_count === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Next application will be a first-time application (priority)
                       </p>
                     )}
-                    <div className="mt-2 space-y-2">
-                      <Label htmlFor="verified_income" className="text-xs text-muted-foreground">
-                        Verified income (K)
-                      </Label>
-                      <Input
-                        id="verified_income"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder={String(member.monthly_income ?? '')}
-                        value={incomeInput}
-                        onChange={(e) => setIncomeInput(e.target.value)}
-                      />
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        disabled={verifyIncome.isPending || incomeInput === ''}
-                        onClick={() =>
-                          verifyIncome.mutate(
-                            {
-                              id: member.id,
-                              data: { verified_income: Number(incomeInput) },
-                            },
-                            {
-                              onSuccess: () => {
-                                toast.success('Income verified')
-                                setIncomeInput('')
-                              },
-                              onError: () => toast.error('Failed to verify income'),
-                            }
-                          )
-                        }
-                      >
-                        {verifyIncome.isPending && (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        )}
-                        Verify income
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>

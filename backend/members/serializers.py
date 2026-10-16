@@ -1,8 +1,26 @@
+import re
+
 from rest_framework import serializers
 
 from users.serializers import UserSerializer
 
 from .models import Member
+
+MAN_NUMBER_PATTERN = re.compile(r'^[A-Z0-9-]{3,20}$')
+
+
+def validate_man_number(value):
+    """Normalise a MAN number and check it is well-formed and unused."""
+    value = (value or '').strip().upper()
+    if not MAN_NUMBER_PATTERN.match(value):
+        raise serializers.ValidationError(
+            'Enter a valid MAN number (3-20 letters, digits or dashes)'
+        )
+    if Member.objects.filter(member_id__iexact=value).exists():
+        raise serializers.ValidationError(
+            'A member with this MAN number already exists'
+        )
+    return value
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -11,19 +29,20 @@ class MemberSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     full_name = serializers.CharField(read_only=True)
     email = serializers.CharField(read_only=True)
+    application_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Member
         fields = [
             'id', 'member_id', 'user', 'nrc_number', 'phone_number',
-            'address', 'department', 'employment_status', 'monthly_income',
-            'income_verified', 'verified_income', 'membership_status',
-            'approved_by', 'approval_date', 'account_status',
+            'address', 'department', 'employment_status',
+            'membership_status', 'approved_by', 'approval_date',
+            'account_status', 'application_count',
             'full_name', 'email', 'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'id', 'member_id', 'income_verified', 'verified_income',
-            'approved_by', 'approval_date', 'created_at', 'updated_at',
+            'id', 'member_id', 'approved_by', 'approval_date',
+            'created_at', 'updated_at',
         ]
 
 
@@ -32,20 +51,21 @@ class MemberListSerializer(serializers.ModelSerializer):
 
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
     email = serializers.CharField(source='user.email', read_only=True)
+    application_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Member
         fields = [
             'id', 'member_id', 'full_name', 'email', 'department',
-            'employment_status', 'monthly_income', 'income_verified',
-            'verified_income', 'membership_status', 'account_status',
-            'created_at',
+            'employment_status', 'membership_status', 'account_status',
+            'application_count', 'created_at',
         ]
 
 
 class MemberCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating members with user account."""
 
+    member_id = serializers.CharField(max_length=20)
     email = serializers.EmailField(write_only=True)
     username = serializers.CharField(write_only=True)
     first_name = serializers.CharField(write_only=True)
@@ -55,10 +75,13 @@ class MemberCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = [
-            'email', 'username', 'first_name', 'last_name', 'password',
-            'nrc_number', 'phone_number', 'address', 'department',
-            'employment_status', 'monthly_income',
+            'member_id', 'email', 'username', 'first_name', 'last_name',
+            'password', 'nrc_number', 'phone_number', 'address',
+            'department', 'employment_status',
         ]
+
+    def validate_member_id(self, value):
+        return validate_man_number(value)
 
     def create(self, validated_data):
         from users.models import User
@@ -77,7 +100,6 @@ class MemberCreateSerializer(serializers.ModelSerializer):
         member = Member.objects.create(
             user=user,
             membership_status='ACTIVE',
-            income_verified=True,
             **validated_data
         )
         return member
@@ -89,6 +111,7 @@ class MemberSelfSignupSerializer(serializers.ModelSerializer):
     Creates a MEMBER user and a PENDING member profile awaiting admin approval.
     """
 
+    member_id = serializers.CharField(max_length=20)
     email = serializers.EmailField(source='user_email')
     first_name = serializers.CharField(max_length=150, source='user_first_name')
     last_name = serializers.CharField(max_length=150, source='user_last_name')
@@ -97,10 +120,13 @@ class MemberSelfSignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = [
-            'email', 'first_name', 'last_name', 'password',
+            'member_id', 'email', 'first_name', 'last_name', 'password',
             'nrc_number', 'phone_number', 'address', 'department',
-            'employment_status', 'monthly_income',
+            'employment_status',
         ]
+
+    def validate_member_id(self, value):
+        return validate_man_number(value)
 
     def validate_email(self, value):
         from users.models import User
@@ -142,8 +168,7 @@ class MemberUpdateSerializer(serializers.ModelSerializer):
         model = Member
         fields = [
             'nrc_number', 'phone_number', 'address', 'department',
-            'employment_status', 'monthly_income', 'membership_status',
-            'account_status',
+            'employment_status', 'membership_status', 'account_status',
         ]
 
 
@@ -153,12 +178,3 @@ class MemberSelfUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = ['phone_number', 'address']
-
-
-class IncomeVerificationSerializer(serializers.Serializer):
-    """Serializer for verifying a member's income."""
-
-    verified_income = serializers.DecimalField(
-        max_digits=12, decimal_places=2, required=False, allow_null=True
-    )
-    notes = serializers.CharField(required=False, allow_blank=True)

@@ -35,6 +35,8 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
     loan_type_name = serializers.CharField(source='loan_type.name', read_only=True)
     reviewed_by_name = serializers.SerializerMethodField()
     eligibility = serializers.SerializerMethodField()
+    previous_applications = serializers.IntegerField(read_only=True)
+    is_first_time_applicant = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = LoanApplication
@@ -44,7 +46,7 @@ class LoanApplicationSerializer(serializers.ModelSerializer):
             'application_date', 'current_employment_info', 'income_info',
             'existing_loan_obligations', 'status', 'rejection_reason',
             'reviewed_by', 'reviewed_by_name', 'reviewed_at',
-            'eligibility',
+            'eligibility', 'previous_applications', 'is_first_time_applicant',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
@@ -87,6 +89,8 @@ class LoanApplicationListSerializer(serializers.ModelSerializer):
     member_name = serializers.CharField(source='member.user.get_full_name', read_only=True)
     member_id = serializers.CharField(source='member.member_id', read_only=True)
     loan_type_name = serializers.CharField(source='loan_type.name', read_only=True)
+    previous_applications = serializers.IntegerField(read_only=True)
+    is_first_time_applicant = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = LoanApplication
@@ -94,6 +98,7 @@ class LoanApplicationListSerializer(serializers.ModelSerializer):
             'id', 'application_id', 'member_name', 'member_id',
             'loan_type', 'loan_type_name', 'requested_amount',
             'duration_months', 'status', 'application_date',
+            'previous_applications', 'is_first_time_applicant',
         ]
 
 

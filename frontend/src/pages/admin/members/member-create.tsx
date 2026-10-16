@@ -90,6 +90,11 @@ export function MemberCreate() {
               <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Profile Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="member_id">MAN Number *</Label>
+                  <Input id="member_id" placeholder="e.g. 10230" {...register('member_id')} />
+                  {errors.member_id && <p className="text-sm text-destructive">{errors.member_id.message}</p>}
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="nrc_number">NRC Number *</Label>
                   <Input id="nrc_number" {...register('nrc_number')} />
                   {errors.nrc_number && <p className="text-sm text-destructive">{errors.nrc_number.message}</p>}
@@ -121,11 +126,6 @@ export function MemberCreate() {
                     </SelectContent>
                   </Select>
                   {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status.message}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthly_income">Monthly Income (K) *</Label>
-                  <Input id="monthly_income" type="number" step="0.01" {...register('monthly_income')} />
-                  {errors.monthly_income && <p className="text-sm text-destructive">{errors.monthly_income.message}</p>}
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="address">Address *</Label>

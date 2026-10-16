@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { formatCurrency, formatDateTime } from '@/lib/formatters'
+import { formatDateTime } from '@/lib/formatters'
 import {
   Mail,
   Phone,
@@ -18,7 +18,6 @@ import {
   Calendar,
   CreditCard,
   MapPin,
-  BadgeCheck,
   Clock,
   Loader2,
 } from 'lucide-react'
@@ -118,7 +117,7 @@ export function MemberProfile() {
                 <div className="flex items-center gap-3">
                   <CreditCard className="w-4 h-4 text-muted-foreground/70" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Member ID</p>
+                    <p className="text-xs text-muted-foreground">MAN Number</p>
                     <p className="text-sm font-medium">{profile.member_id}</p>
                   </div>
                 </div>
@@ -219,22 +218,11 @@ export function MemberProfile() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Declared monthly income</p>
-                <p className="text-sm font-bold text-primary">
-                  {formatCurrency(profile.monthly_income)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Income verification</p>
-                {profile.income_verified ? (
-                  <p className="text-sm font-medium flex items-center gap-1.5 text-primary">
-                    <BadgeCheck className="w-4 h-4" />
-                    Verified{profile.verified_income != null && ` — ${formatCurrency(profile.verified_income)}`}
-                  </p>
-                ) : (
-                  <p className="text-sm text-amber-600 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4" />
-                    Awaiting administrator verification
+                <p className="text-xs text-muted-foreground">Loan applications made</p>
+                <p className="text-sm font-bold text-primary">{profile.application_count}</p>
+                {profile.application_count === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    First-time applicants are given priority.
                   </p>
                 )}
               </div>

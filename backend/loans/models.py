@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from members.models import Member
@@ -86,6 +87,48 @@ class LoanApplication(models.Model):
         if not self.application_id:
             self.application_id = f'APP-{uuid.uuid4().hex[:8].upper()}'
         super().save(*args, **kwargs)
+
+    @property
+    def previous_applications(self):
+        """How many loan applications the member made before this one.
+
+        Cancelled applications don't count. 0 means a first-time applicant,
+        who gets priority. List views annotate this as
+        `annotated_previous_applications` (see previous_applications_subquery).
+        """
+        annotated = self.__dict__.get('annotated_previous_applications')
+        if annotated is not None:
+            return annotated
+        return (
+            LoanApplication.objects.filter(
+                member_id=self.member_id,
+                application_date__lt=self.application_date,
+            )
+            .exclude(status='CANCELLED')
+            .count()
+        )
+
+    @property
+    def is_first_time_applicant(self):
+        return self.previous_applications == 0
+
+
+def previous_applications_subquery():
+    """Per-application count of the member's earlier, non-cancelled applications."""
+    earlier = (
+        LoanApplication.objects.filter(
+            member_id=models.OuterRef('member_id'),
+            application_date__lt=models.OuterRef('application_date'),
+        )
+        .exclude(status='CANCELLED')
+        .order_by()
+        .values('member_id')
+        .annotate(n=models.Count('pk'))
+        .values('n')
+    )
+    return Coalesce(
+        models.Subquery(earlier, output_field=models.IntegerField()), 0
+    )
 
 
 class Loan(models.Model):

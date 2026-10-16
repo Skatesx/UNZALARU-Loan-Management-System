@@ -46,6 +46,9 @@ export interface LoanApplication {
   reviewed_by_name: string | null
   reviewed_at: string | null
   eligibility: EligibilityAssessment | null
+  /** Applications the member made before this one; 0 = first-time applicant */
+  previous_applications: number
+  is_first_time_applicant: boolean
   created_at: string
   updated_at: string
 }
@@ -75,6 +78,8 @@ export interface LoanApplicationListItem {
   duration_months: number
   status: LoanApplicationStatus
   application_date: string
+  previous_applications: number
+  is_first_time_applicant: boolean
 }
 
 export interface LoanApplicationCreateRequest {

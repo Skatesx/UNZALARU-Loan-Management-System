@@ -21,6 +21,19 @@ def make_application(member, loan_type, amount=Decimal('10000'), months=6):
     )
 
 
+def make_low_score_member(member, loan_type, earlier_applications=3):
+    """Part-time member who has applied several times before: scores below 60."""
+    member.employment_status = 'PART_TIME'
+    member.save()
+    for days_ago in range(earlier_applications, 0, -1):
+        earlier = make_application(member, loan_type)
+        earlier.status = 'REJECTED'
+        earlier.save()
+        LoanApplication.objects.filter(pk=earlier.pk).update(
+            application_date=timezone.now() - timedelta(days=days_ago)
+        )
+
+
 @pytest.mark.django_db
 class TestApprovalCriteria:
     """Test configurable loan approval criteria."""
@@ -31,45 +44,42 @@ class TestApprovalCriteria:
             assert key in criteria
 
     def test_good_member_passes_criteria(self, member, loan_type, eligibility_rules):
-        member.verified_income = Decimal('10000')
-        member.save()
         app = make_application(member, loan_type)
         result = evaluate(app)
         assert result['passed'] is True
         assert all(r['passed'] for r in result['results'])
 
     def test_low_score_fails_criteria(self, member, loan_type, eligibility_rules):
-        member.monthly_income = Decimal('1500')
-        member.verified_income = Decimal('1500')
-        member.save()
+        make_low_score_member(member, loan_type)
         app = make_application(member, loan_type)
         result = evaluate(app)
         assert result['passed'] is False
         failed_keys = [r['key'] for r in result['results'] if not r['passed']]
         assert 'min_eligibility_score' in failed_keys
 
-    def test_unverified_income_fails_criteria(
-        self, member, loan_type, eligibility_rules
-    ):
-        member.income_verified = False
-        member.verified_income = None
-        member.save()
+    def test_first_time_applicant_is_flagged(self, member, loan_type, eligibility_rules):
         app = make_application(member, loan_type)
-        result = evaluate(app)
-        failed_keys = [r['key'] for r in result['results'] if not r['passed']]
-        assert 'require_income_verification' in failed_keys
+        history = next(
+            r for r in evaluate(app)['results'] if r['key'] == 'application_history'
+        )
+        assert history['value'] == 0
+        assert history['passed'] is True
+        assert 'First-time' in history['detail']
 
-    def test_high_installment_ratio_fails(
+    def test_repeat_applicant_shows_count_but_is_not_blocked(
         self, member, loan_type, eligibility_rules
     ):
-        # Tiny income relative to requested amount
-        member.monthly_income = Decimal('1000')
-        member.verified_income = Decimal('1000')
-        member.save()
-        app = make_application(member, loan_type, amount=Decimal('20000'))
-        result = evaluate(app)
-        failed_keys = [r['key'] for r in result['results'] if not r['passed']]
-        assert 'max_installment_income_ratio' in failed_keys
+        make_low_score_member(member, loan_type, earlier_applications=2)
+        app = make_application(member, loan_type)
+        history = next(
+            r for r in evaluate(app)['results'] if r['key'] == 'application_history'
+        )
+        assert history['value'] == 2
+        assert history['passed'] is True
+
+    def test_income_criteria_removed(self, db):
+        assert 'require_income_verification' not in DEFAULT_CRITERIA
+        assert 'max_installment_income_ratio' not in DEFAULT_CRITERIA
 
     def test_pending_member_fails_membership_criterion(
         self, member, loan_type, eligibility_rules
@@ -126,20 +136,14 @@ class TestApprovalCriteria:
     def test_criteria_configurable_via_system_config(
         self, member, loan_type, eligibility_rules, db
     ):
-        # Lower score threshold and disable verification via SystemConfig
+        # Lower the score threshold via SystemConfig
         custom = dict(DEFAULT_CRITERIA)
         custom['min_eligibility_score'] = 0
-        custom['require_income_verification'] = False
-        custom['max_installment_income_ratio'] = 10
         SystemConfig.objects.update_or_create(
             key=CRITERIA_KEY, defaults={'value': custom}
         )
 
-        member.monthly_income = Decimal('1000')
-        member.verified_income = None
-        member.income_verified = False
-        member.save()
-
+        make_low_score_member(member, loan_type)
         app = make_application(member, loan_type)
         result = evaluate(app)
         # All criteria should now pass
@@ -148,9 +152,7 @@ class TestApprovalCriteria:
     def test_approve_blocked_without_override(
         self, member, loan_type, eligibility_rules
     ):
-        member.income_verified = False
-        member.verified_income = None
-        member.save()
+        make_low_score_member(member, loan_type)
         app = make_application(member, loan_type)
 
         service = LoanApplicationService()
@@ -160,9 +162,7 @@ class TestApprovalCriteria:
     def test_approve_with_override_succeeds(
         self, admin_user, member, loan_type, eligibility_rules
     ):
-        member.income_verified = False
-        member.verified_income = None
-        member.save()
+        make_low_score_member(member, loan_type)
         app = make_application(member, loan_type)
 
         service = LoanApplicationService()

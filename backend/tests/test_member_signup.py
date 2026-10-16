@@ -30,7 +30,7 @@ class TestMemberSignup:
             'address': '789 New Road, Lusaka',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
-            'monthly_income': 9000,
+            'member_id': '20001',
         }, content_type='application/json')
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -40,7 +40,8 @@ class TestMemberSignup:
         assert user.role == 'MEMBER'
         member = user.member_profile
         assert member.membership_status == 'PENDING'
-        assert member.income_verified is False
+        assert member.member_id == '20001'
+        assert response.data['member_id'] == '20001'
 
     def test_signup_duplicate_email_rejected(self, api_client, member_user):
         """Signup with an existing email is rejected."""
@@ -54,7 +55,7 @@ class TestMemberSignup:
             'address': 'A',
             'department': 'B',
             'employment_status': 'PERMANENT',
-            'monthly_income': 1000,
+            'member_id': '20002',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -71,7 +72,7 @@ class TestMemberSignup:
             'address': 'A',
             'department': 'B',
             'employment_status': 'PERMANENT',
-            'monthly_income': 1000,
+            'member_id': '20003',
         }, content_type='application/json')
         # Second signup with same NRC
         response = api_client.post('/api/members/signup/', {
@@ -84,7 +85,7 @@ class TestMemberSignup:
             'address': 'C',
             'department': 'D',
             'employment_status': 'PERMANENT',
-            'monthly_income': 2000,
+            'member_id': '20004',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -125,7 +126,7 @@ class TestPendingMemberRestrictions:
             address='1 Test St',
             department='Law',
             employment_status='CONTRACT',
-            monthly_income=Decimal('5000'),
+            member_id='20099',
             membership_status='PENDING',
         )
 
@@ -175,19 +176,6 @@ class TestMemberApproval:
         )
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_admin_can_verify_income(self, auth_client_admin, member):
-        """Admin can verify a member's income."""
-        response = auth_client_admin.post(
-            f'/api/members/{member.id}/verify-income/',
-            {'verified_income': '9500.00', 'notes': 'Payslip seen'},
-            content_type='application/json',
-        )
-        assert response.status_code == status.HTTP_200_OK
-        member.refresh_from_db()
-        assert member.income_verified is True
-        assert member.verified_income == Decimal('9500.00')
-        assert member.effective_income == Decimal('9500.00')
-
     def test_me_endpoint(self, auth_client_member, member):
         """Member can fetch their own profile via /members/me/."""
         response = auth_client_member.get('/api/members/me/')
@@ -206,12 +194,60 @@ class TestMemberApproval:
         assert member.phone_number == '+260711111111'
         assert member.address == '2 Updated St'
 
-    def test_member_cannot_update_income(self, auth_client_member, member):
-        """Member cannot modify their own income via self-update."""
-        response = auth_client_member.put(
+    def test_member_cannot_change_own_man_number(self, auth_client_member, member):
+        """Self-update only changes contact details, not the MAN number."""
+        auth_client_member.put(
             '/api/members/update_me/',
-            {'monthly_income': 999999},
+            {'member_id': '99999'},
             content_type='application/json',
         )
         member.refresh_from_db()
-        assert member.monthly_income != Decimal('999999')
+        assert member.member_id == '10001'
+
+
+@pytest.mark.django_db
+class TestManNumbers:
+    """MAN numbers are entered at signup and identify the member."""
+
+    def _signup(self, api_client, email, nrc, man):
+        return api_client.post('/api/members/signup/', {
+            'member_id': man,
+            'email': email,
+            'first_name': 'Man',
+            'last_name': 'Number',
+            'password': 'securepass123',
+            'nrc_number': nrc,
+            'phone_number': '+260700555555',
+            'address': 'A',
+            'department': 'B',
+            'employment_status': 'PERMANENT',
+        }, content_type='application/json')
+
+    def test_man_number_required(self, api_client):
+        response = api_client.post('/api/members/signup/', {
+            'email': 'noman@test.com',
+            'first_name': 'No',
+            'last_name': 'Man',
+            'password': 'securepass123',
+            'nrc_number': 'NRC-NOMAN',
+            'phone_number': '+260700555555',
+            'address': 'A',
+            'department': 'B',
+            'employment_status': 'PERMANENT',
+        }, content_type='application/json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'member_id' in response.data
+
+    def test_duplicate_man_number_rejected(self, api_client, member):
+        response = self._signup(api_client, 'dupman@test.com', 'NRC-DUPMAN', member.member_id)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'member_id' in response.data
+
+    def test_invalid_man_number_rejected(self, api_client):
+        response = self._signup(api_client, 'badman@test.com', 'NRC-BADMAN', 'a b!')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_man_number_is_normalised(self, api_client):
+        response = self._signup(api_client, 'lower@test.com', 'NRC-LOWER', ' ab123 ')
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Member.objects.get(user__email='lower@test.com').member_id == 'AB123'

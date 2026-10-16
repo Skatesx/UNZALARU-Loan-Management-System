@@ -46,15 +46,13 @@ def member(member_user):
     """Create an approved member profile."""
     return Member.objects.create(
         user=member_user,
+        member_id='10001',
         nrc_number='NRC-123456',
         phone_number='+260700000000',
         address='123 Test Road, Lusaka',
         department='Computer Science',
         employment_status='PERMANENT',
-        monthly_income=Decimal('10000.00'),
         membership_status='ACTIVE',
-        income_verified=True,
-        verified_income=Decimal('10000.00'),
     )
 
 
@@ -63,12 +61,12 @@ def pending_member(pending_member_user):
     """Create a pending (unapproved) member profile."""
     return Member.objects.create(
         user=pending_member_user,
+        member_id='10002',
         nrc_number='NRC-PENDING1',
         phone_number='+260700000001',
         address='456 Test Road, Lusaka',
         department='Mathematics',
         employment_status='CONTRACT',
-        monthly_income=Decimal('8000.00'),
         membership_status='PENDING',
     )
 
@@ -108,13 +106,14 @@ def eligibility_rules(db):
     """Create default eligibility rules."""
     rules = [
         EligibilityRule.objects.create(
-            name='Income Score',
-            factor='INCOME',
+            name='Application History',
+            factor='APPLICATION_HISTORY',
             weight=Decimal('30.00'),
             thresholds=[
-                {'min': 0, 'max': 5000, 'score': 30},
-                {'min': 5001, 'max': 15000, 'score': 70},
-                {'min': 15001, 'max': None, 'score': 100},
+                {'min': 0, 'max': 0, 'score': 100},
+                {'min': 1, 'max': 1, 'score': 70},
+                {'min': 2, 'max': 2, 'score': 40},
+                {'min': 3, 'max': None, 'score': 10},
             ],
         ),
         EligibilityRule.objects.create(

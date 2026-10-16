@@ -105,7 +105,7 @@ export function AuthStoryPanel({ headline }: { headline?: string }) {
       <div className="relative space-y-8 animate-rise">
         <div className="max-w-md">
           <h1 className="text-3xl xl:text-4xl font-semibold tracking-tight leading-tight">
-            {headline ?? 'Union loans, without the queue.'}
+            {headline ?? 'Loans, without the queue.'}
           </h1>
           <p className="mt-3 text-emerald-100/70 leading-relaxed text-sm xl:text-base">
             The official borrowing platform for UNZALARU staff — apply, get scored, and

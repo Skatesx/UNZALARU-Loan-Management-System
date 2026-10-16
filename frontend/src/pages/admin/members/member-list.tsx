@@ -19,8 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { formatCurrency } from '@/lib/formatters'
-import { BadgeCheck, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth, useStaffBase } from '@/hooks/use-auth'
 
@@ -115,7 +114,7 @@ export function MemberList() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="w-64">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search members..." />
+          <SearchInput value={search} onChange={setSearch} placeholder="Search by name or MAN number..." />
         </div>
         <Select value={statusFilter || 'ALL'} onValueChange={(v) => setStatusFilter(v || '')}>
           <SelectTrigger className="w-40">
@@ -152,13 +151,12 @@ export function MemberList() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-muted/50">
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member ID</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">MAN Number</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Name</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Department</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Income</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Income Verified</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Times Applied</th>
                     <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
@@ -179,18 +177,11 @@ export function MemberList() {
                       <td className="px-4 py-3 font-medium">{member.full_name}</td>
                       <td className="px-4 py-3 text-muted-foreground">{member.email}</td>
                       <td className="px-4 py-3">{member.department}</td>
-                      <td className="px-4 py-3">{formatCurrency(member.monthly_income)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={member.membership_status} />
                       </td>
                       <td className="px-4 py-3">
-                        {member.income_verified ? (
-                          <span className="inline-flex items-center gap-1 text-primary text-sm">
-                            <BadgeCheck className="w-4 h-4" /> Yes
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/70 text-sm">No</span>
-                        )}
+                        {member.application_count}
                       </td>
                       <td className="px-4 py-3">
                         {isAdmin && member.membership_status === 'PENDING' && (

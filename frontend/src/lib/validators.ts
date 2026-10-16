@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+// UNZA MAN (staff) number - same rule as the backend: 3-20 letters, digits or dashes
+const manNumber = z
+  .string()
+  .trim()
+  .min(1, 'MAN number is required')
+  .regex(/^[A-Za-z0-9-]{3,20}$/, 'Enter a valid MAN number (3-20 letters, digits or dashes)')
+
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -8,6 +15,7 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>
 
 export const signupSchema = z.object({
+  member_id: manNumber,
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email address'),
@@ -20,7 +28,6 @@ export const signupSchema = z.object({
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
-  monthly_income: z.coerce.number().positive('Income must be positive'),
 }).refine((data) => data.password === data.confirm_password, {
   message: 'Passwords do not match',
   path: ['confirm_password'],
@@ -40,6 +47,7 @@ export const passwordChangeSchema = z.object({
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>
 
 export const memberCreateSchema = z.object({
+  member_id: manNumber,
   email: z.string().email('Please enter a valid email address'),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   first_name: z.string().min(1, 'First name is required'),
@@ -52,7 +60,6 @@ export const memberCreateSchema = z.object({
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
-  monthly_income: z.coerce.number().positive('Income must be positive'),
 })
 
 export type MemberCreateFormData = z.infer<typeof memberCreateSchema>

@@ -1,8 +1,11 @@
-import uuid
-
 from django.db import models
 
 from users.models import User
+
+# Annotation for member querysets: loan applications, excluding cancelled ones
+APPLICATION_COUNT = models.Count(
+    'applications', filter=~models.Q(applications__status='CANCELLED')
+)
 
 
 class Member(models.Model):
@@ -30,29 +33,18 @@ class Member(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='member_profile'
     )
-    member_id = models.CharField(max_length=20, unique=True, editable=False)
+    # The member's UNZA MAN number (staff number), entered at registration;
+    # it is the ID used for members throughout the system.
+    member_id = models.CharField(
+        'MAN number', max_length=20, unique=True,
+        help_text='UNZA MAN number used to identify the member',
+    )
     nrc_number = models.CharField(max_length=20, unique=True)
     phone_number = models.CharField(max_length=20)
     address = models.TextField()
     department = models.CharField(max_length=100)
     employment_status = models.CharField(
         max_length=20, choices=EMPLOYMENT_STATUS_CHOICES
-    )
-    # Declared monthly income. Verified income is the figure an administrator
-    # has confirmed from supporting documents; it falls back to declared.
-    monthly_income = models.DecimalField(
-        max_digits=12, decimal_places=2, help_text='Declared monthly income'
-    )
-    income_verified = models.BooleanField(
-        default=False, help_text='Admin has verified the declared income'
-    )
-    verified_income = models.DecimalField(
-        max_digits=12, decimal_places=2, null=True, blank=True,
-        help_text='Income verified by administrator (falls back to declared)'
-    )
-    income_verified_by = models.ForeignKey(
-        User, null=True, blank=True, on_delete=models.SET_NULL,
-        related_name='income_verifications'
     )
     membership_status = models.CharField(
         max_length=20, choices=MEMBERSHIP_STATUS_CHOICES, default='PENDING',
@@ -77,11 +69,6 @@ class Member(models.Model):
     def __str__(self):
         return f'{self.member_id} - {self.user.get_full_name()}'
 
-    def save(self, *args, **kwargs):
-        if not self.member_id:
-            self.member_id = f'MBR-{uuid.uuid4().hex[:8].upper()}'
-        super().save(*args, **kwargs)
-
     @property
     def full_name(self):
         return self.user.get_full_name()
@@ -91,9 +78,17 @@ class Member(models.Model):
         return self.user.email
 
     @property
-    def effective_income(self):
-        """Verified income if set, otherwise declared income."""
-        return self.verified_income if self.verified_income is not None else self.monthly_income
+    def application_count(self):
+        """How many times the member has applied for a loan.
+
+        Cancelled applications don't count. List views annotate this as
+        `annotated_application_count` (see APPLICATION_COUNT) to avoid a
+        query per member.
+        """
+        annotated = self.__dict__.get('annotated_application_count')
+        if annotated is not None:
+            return annotated
+        return self.applications.exclude(status='CANCELLED').count()
 
     @property
     def is_pending(self):
