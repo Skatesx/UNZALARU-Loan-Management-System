@@ -208,7 +208,7 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <AuthStoryPanel headline="Start borrowing with your union." />
+      <AuthStoryPanel headline="Your financial well-being is our priority." />
 
       <main className="relative flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-10 overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0">
