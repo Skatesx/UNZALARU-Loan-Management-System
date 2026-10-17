@@ -1,12 +1,16 @@
+import { useEffect, useState } from 'react'
 import { Landmark, ShieldCheck, Timer, ArrowUpRight, Banknote } from 'lucide-react'
 
 /* Shared branded "scene" panel used as the left side of auth pages. */
+
+/** How long each background scene shows before crossfading to the next. */
+const SCENE_INTERVAL_MS = 5000
 
 function SceneIllustration() {
   return (
     <svg
       viewBox="0 0 420 320"
-      className="w-full max-w-md opacity-95"
+      className="w-full h-full opacity-95"
       role="img"
       aria-label="Illustration of stacked coins and a growing balance"
     >
@@ -67,6 +71,98 @@ function SceneIllustration() {
   )
 }
 
+/** Scene 2: a loan application card being approved. */
+function ApprovalIllustration() {
+  return (
+    <svg viewBox="0 0 420 320" className="w-full h-full opacity-95" role="img" aria-label="Illustration of an approved loan application">
+      <defs>
+        <linearGradient id="badge" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgb(110 231 183)" />
+          <stop offset="100%" stopColor="rgb(16 128 96)" />
+        </linearGradient>
+      </defs>
+      {/* back card */}
+      <rect x="120" y="58" width="200" height="230" rx="18" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.15)" transform="rotate(6 220 173)" />
+      {/* application card */}
+      <g className="animate-rise">
+        <rect x="100" y="45" width="210" height="240" rx="18" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+        <rect x="124" y="72" width="96" height="12" rx="6" fill="rgba(255,255,255,0.55)" />
+        <rect x="124" y="94" width="140" height="8" rx="4" fill="rgba(255,255,255,0.2)" />
+        <text x="124" y="148" fill="rgba(255,255,255,0.92)" fontSize="30" fontWeight="700">K15,000</text>
+        <rect x="124" y="166" width="120" height="8" rx="4" fill="rgba(255,255,255,0.2)" />
+        {[196, 216, 236].map((y, i) => (
+          <g key={y}>
+            <circle cx="130" cy={y} r="5" fill="rgba(110,231,183,0.85)" />
+            <rect x="144" y={y - 4} width={130 - i * 22} height="8" rx="4" fill="rgba(255,255,255,0.18)" />
+          </g>
+        ))}
+      </g>
+      {/* approved badge */}
+      <g className="animate-float">
+        <circle cx="318" cy="232" r="40" fill="url(#badge)" stroke="rgba(255,255,255,0.5)" strokeWidth="2" />
+        <path d="M300 233 l12 12 l24 -26" fill="none" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    </svg>
+  )
+}
+
+/** Scene 3: a payslip with the loan repayment deducted. */
+function PayrollIllustration() {
+  return (
+    <svg viewBox="0 0 420 320" className="w-full h-full opacity-95" role="img" aria-label="Illustration of a payslip with a loan deduction">
+      <defs>
+        <linearGradient id="slipCoin" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgb(103 232 249)" />
+          <stop offset="100%" stopColor="rgb(14 116 144)" />
+        </linearGradient>
+      </defs>
+      <g className="animate-rise">
+        <rect x="70" y="40" width="200" height="250" rx="16" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+        <text x="92" y="76" fill="rgba(255,255,255,0.9)" fontSize="15" fontWeight="600">Payslip</text>
+        <rect x="92" y="88" width="80" height="7" rx="3.5" fill="rgba(255,255,255,0.22)" />
+        <line x1="92" y1="110" x2="248" y2="110" stroke="rgba(255,255,255,0.15)" />
+        {/* salary line */}
+        <rect x="92" y="126" width="70" height="8" rx="4" fill="rgba(255,255,255,0.3)" />
+        <rect x="200" y="126" width="48" height="8" rx="4" fill="rgba(255,255,255,0.3)" />
+        <rect x="92" y="150" width="56" height="8" rx="4" fill="rgba(255,255,255,0.18)" />
+        <rect x="208" y="150" width="40" height="8" rx="4" fill="rgba(255,255,255,0.18)" />
+        {/* highlighted loan deduction line */}
+        <rect x="84" y="172" width="172" height="30" rx="8" fill="rgba(103,232,249,0.16)" stroke="rgba(103,232,249,0.55)" />
+        <text x="94" y="192" fill="rgba(255,255,255,0.92)" fontSize="12" fontWeight="600">UNZALARU loan</text>
+        <text x="246" y="192" textAnchor="end" fill="rgba(255,255,255,0.92)" fontSize="12" fontWeight="600">-K2,750</text>
+        <line x1="92" y1="222" x2="248" y2="222" stroke="rgba(255,255,255,0.15)" />
+        <rect x="92" y="238" width="60" height="9" rx="4.5" fill="rgba(255,255,255,0.35)" />
+        <rect x="196" y="238" width="52" height="9" rx="4.5" fill="rgba(255,255,255,0.35)" />
+      </g>
+      {/* deduction flowing to the loan */}
+      <path d="M262 187 C 300 187, 300 140, 338 140" fill="none" stroke="rgba(103,232,249,0.6)" strokeWidth="3" strokeDasharray="6 7" strokeLinecap="round" />
+      <g className="animate-float">
+        <circle cx="352" cy="132" r="30" fill="url(#slipCoin)" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+        <text x="352" y="139" textAnchor="middle" fill="rgba(255,255,255,0.92)" fontSize="17" fontWeight="600">K</text>
+      </g>
+    </svg>
+  )
+}
+
+/** The scenes that cycle behind the story; each has its own colour wash. */
+const SCENES = [
+  { label: 'Growing balance', Illustration: SceneIllustration, wash: 'from-emerald-500/25 via-transparent to-teal-400/10' },
+  { label: 'Loan approved', Illustration: ApprovalIllustration, wash: 'from-teal-400/25 via-transparent to-emerald-300/15' },
+  { label: 'Repaid through payroll', Illustration: PayrollIllustration, wash: 'from-cyan-400/25 via-transparent to-emerald-500/15' },
+]
+
+/** Advances through the scenes every SCENE_INTERVAL_MS, unless the user prefers reduced motion. */
+function useSceneCycle(count: number) {
+  const [index, setIndex] = useState(0)
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return
+    const timer = window.setInterval(() => setIndex((i) => (i + 1) % count), SCENE_INTERVAL_MS)
+    return () => window.clearInterval(timer)
+  }, [count, index]) // restarting on index change gives a full interval after a manual pick
+  return [index, setIndex] as const
+}
+
 const FEATURES = [
   { icon: Timer, title: 'Money in minutes, not meetings', body: 'Apply online and track every approval step in real time.' },
   { icon: ShieldCheck, title: 'Eligibility you can see', body: 'Clear criteria and automatic scoring before you commit.' },
@@ -74,8 +170,22 @@ const FEATURES = [
 ]
 
 export function AuthStoryPanel({ headline }: { headline?: string }) {
+  const [scene, setScene] = useSceneCycle(SCENES.length)
+
   return (
     <aside className="relative hidden lg:flex lg:w-[46%] xl:w-[46%] flex-col justify-between overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-teal-950 p-10 xl:p-14 text-emerald-50">
+      {/* colour wash for the current scene, crossfading */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {SCENES.map((s, i) => (
+          <div
+            key={s.label}
+            className={`absolute inset-0 bg-gradient-to-br ${s.wash} transition-opacity duration-1000 ease-in-out ${
+              i === scene ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ))}
+      </div>
+
       {/* depth layers */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 -left-24 w-[26rem] h-[26rem] rounded-full bg-emerald-400/10 blur-3xl animate-float" />
@@ -113,7 +223,36 @@ export function AuthStoryPanel({ headline }: { headline?: string }) {
           </p>
         </div>
 
-        <SceneIllustration />
+        {/* cycling scenes, stacked so they crossfade in place */}
+        <div className="max-w-md">
+          <div className="relative w-full aspect-[420/320]">
+            {SCENES.map(({ label, Illustration }, i) => (
+              <div
+                key={label}
+                aria-hidden={i !== scene}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  i === scene ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                <Illustration />
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center gap-2" role="group" aria-label="Choose scene">
+            {SCENES.map(({ label }, i) => (
+              <button
+                key={label}
+                type="button"
+                aria-label={`Show scene: ${label}`}
+                aria-current={i === scene}
+                onClick={() => setScene(i)}
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  i === scene ? 'w-6 bg-emerald-300' : 'w-1.5 bg-white/30 hover:bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
 
         <ul className="space-y-4 max-w-md">
           {FEATURES.map(({ icon: Icon, title, body }, i) => (
