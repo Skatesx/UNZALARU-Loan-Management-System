@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Landmark, ShieldCheck, Timer, ArrowUpRight, Banknote } from 'lucide-react'
+import { Landmark, ShieldCheck, Timer, ArrowUpRight, Banknote, BadgeCheck } from 'lucide-react'
+import memberPhonePhoto from '@/assets/login-member-phone.jpg'
 
 /* Shared branded "scene" panel used as the left side of auth pages. */
 
@@ -106,89 +107,36 @@ function ApprovalIllustration() {
   )
 }
 
-/** Sparkle: a small four-pointed star centred on (x, y). */
-function Sparkle({ x, y, size = 8 }: { x: number; y: number; size?: number }) {
-  const s = size
+/**
+ * Scene 3: a member smiling at her phone as the loan money arrives.
+ * Photo: Pexels (free to use, no attribution required)
+ * https://www.pexels.com/photo/portrait-of-woman-wearing-orange-shirt-19863396/
+ */
+function MoneyReceivedScene() {
   return (
-    <path
-      d={`M${x} ${y - s} Q${x + s * 0.18} ${y - s * 0.18} ${x + s} ${y} Q${x + s * 0.18} ${y + s * 0.18} ${x} ${y + s} Q${x - s * 0.18} ${y + s * 0.18} ${x - s} ${y} Q${x - s * 0.18} ${y - s * 0.18} ${x} ${y - s} Z`}
-      fill="rgba(255,255,255,0.85)"
-    />
-  )
-}
+    <div className="relative w-full h-full overflow-hidden rounded-2xl ring-1 ring-white/20 shadow-2xl shadow-black/30">
+      <img
+        src={memberPhonePhoto}
+        alt="A smiling UNZALARU member checking her phone"
+        className="absolute inset-0 w-full h-full object-cover object-[50%_22%]"
+        decoding="async"
+      />
+      {/* green tint so the photo sits with the panel colours */}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-emerald-950/70 via-emerald-900/10 to-transparent" />
 
-/** Scene 3: a member smiling at their phone as the loan money arrives. */
-function MoneyReceivedIllustration() {
-  const skin = '#9a5b37'
-  const skinShade = '#80472a'
-  const hair = '#24140d'
-  const shirt = 'rgb(52 211 153)'
-  const shirtShade = 'rgb(16 150 110)'
-  return (
-    <svg viewBox="0 0 420 320" className="w-full h-full opacity-95" role="img" aria-label="Illustration of a smiling member receiving money on their phone">
-      <defs>
-        <linearGradient id="giftCoin" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgb(253 230 138)" />
-          <stop offset="100%" stopColor="rgb(217 119 6)" />
-        </linearGradient>
-      </defs>
-
-      {/* soft halo behind the person */}
-      <circle cx="170" cy="190" r="118" fill="rgba(255,255,255,0.05)" />
-
-      <g className="animate-rise">
-        {/* body */}
-        <path d="M88 320 C 88 252, 116 222, 168 222 C 220 222, 248 252, 248 320 Z" fill={shirt} />
-        <path d="M150 222 L168 246 L186 222 Z" fill={shirtShade} />
-        {/* neck */}
-        <rect x="155" y="192" width="26" height="36" rx="10" fill={skinShade} />
-        {/* head */}
-        <circle cx="127" cy="160" r="8" fill={skinShade} />
-        <circle cx="209" cy="160" r="8" fill={skinShade} />
-        <circle cx="168" cy="156" r="42" fill={skin} />
-        {/* hair */}
-        <path d="M126 152 C 122 112, 150 100, 170 102 C 198 102, 214 120, 210 150 C 203 132, 188 124, 168 125 C 148 125, 133 136, 126 152 Z" fill={hair} />
-        {/* happy closed eyes, looking down at the phone */}
-        <path d="M149 158 q7 -7 14 0" fill="none" stroke={hair} strokeWidth="3.2" strokeLinecap="round" />
-        <path d="M175 158 q7 -7 14 0" fill="none" stroke={hair} strokeWidth="3.2" strokeLinecap="round" />
-        {/* cheeks and big smile */}
-        <circle cx="146" cy="172" r="6" fill="rgba(255,150,130,0.35)" />
-        <circle cx="192" cy="172" r="6" fill="rgba(255,150,130,0.35)" />
-        <path d="M152 174 Q169 194 186 174 Z" fill="#3b1a10" />
-        <path d="M156 176 Q169 183 182 176 Z" fill="#fff" opacity="0.9" />
-
-        {/* arm raised, holding the phone */}
-        <path d="M222 252 C 238 246, 254 232, 262 214" fill="none" stroke={shirt} strokeWidth="24" strokeLinecap="round" />
-
-        {/* phone */}
-        <g transform="rotate(-10 288 178)">
-          <rect x="250" y="104" width="78" height="148" rx="14" fill="#0b1f19" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" />
-          <rect x="257" y="114" width="64" height="128" rx="9" fill="rgba(236,253,245,0.96)" />
-          <rect x="278" y="108" width="22" height="3" rx="1.5" fill="rgba(255,255,255,0.4)" />
-          {/* received notification */}
-          <circle cx="289" cy="146" r="14" fill="rgb(16 185 129)" />
-          <path d="M282 146 l5 5 l10 -11" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-          <text x="289" y="178" textAnchor="middle" fill="rgb(6 95 70)" fontSize="7.5" fontWeight="600">Money received</text>
-          <text x="289" y="198" textAnchor="middle" fill="rgb(4 120 87)" fontSize="12.5" fontWeight="800">K15,000</text>
-          <rect x="268" y="210" width="42" height="5" rx="2.5" fill="rgba(6,95,70,0.25)" />
-          <rect x="274" y="221" width="30" height="5" rx="2.5" fill="rgba(6,95,70,0.15)" />
-        </g>
-        {/* hand around the phone */}
-        <ellipse cx="262" cy="214" rx="13" ry="15" fill={skin} />
-        <ellipse cx="270" cy="204" rx="6" ry="9" fill={skin} transform="rotate(-30 270 204)" />
-      </g>
-
-      {/* celebration: coins and sparkles */}
-      <g className="animate-float">
-        <circle cx="356" cy="92" r="20" fill="url(#giftCoin)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" />
-        <text x="356" y="98" textAnchor="middle" fill="rgba(120,53,15,0.9)" fontSize="15" fontWeight="700">K</text>
-        <circle cx="368" cy="222" r="13" fill="url(#giftCoin)" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" />
-        <text x="368" y="227" textAnchor="middle" fill="rgba(120,53,15,0.9)" fontSize="11" fontWeight="700">K</text>
-        <Sparkle x={318} y={70} size={9} />
-        <Sparkle x={384} y={154} size={7} />
-        <Sparkle x={232} y={88} size={6} />
-      </g>
-    </svg>
+      {/* money received notification */}
+      <div className="absolute left-4 bottom-4 right-16 max-w-[15rem] animate-float">
+        <div className="flex items-center gap-3 rounded-xl bg-white/95 px-3.5 py-3 text-emerald-950 shadow-xl shadow-black/25">
+          <span className="shrink-0 w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center">
+            <BadgeCheck className="w-5 h-5 text-white" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-[11px] font-medium text-emerald-700">Money received</span>
+            <span className="block text-lg font-bold leading-tight">K15,000</span>
+          </span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -196,7 +144,7 @@ function MoneyReceivedIllustration() {
 const SCENES = [
   { label: 'Growing balance', Illustration: SceneIllustration, wash: 'from-emerald-500/25 via-transparent to-teal-400/10' },
   { label: 'Loan approved', Illustration: ApprovalIllustration, wash: 'from-teal-400/25 via-transparent to-emerald-300/15' },
-  { label: 'Money received', Illustration: MoneyReceivedIllustration, wash: 'from-amber-300/20 via-transparent to-emerald-500/15' },
+  { label: 'Money received', Illustration: MoneyReceivedScene, wash: 'from-amber-300/20 via-transparent to-emerald-500/15' },
 ]
 
 /** Advances through the scenes every SCENE_INTERVAL_MS, unless the user prefers reduced motion. */
