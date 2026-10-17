@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useMember, useMemberLoanHistory, useMemberRepaymentHistory, useApproveMember, useRejectMember, useVerifyIncome } from '@/hooks/use-members'
+import { useMember, useMemberLoanHistory, useMemberRepaymentHistory, useApproveMember, useRejectMember } from '@/hooks/use-members'
 import { PageHeader } from '@/components/shared/page-header'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
@@ -8,8 +7,6 @@ import { ErrorState } from '@/components/shared/error-state'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { formatCurrency, formatDateTime } from '@/lib/formatters'
 import {
   Mail,
@@ -17,11 +14,22 @@ import {
   Building,
   Calendar,
   CreditCard,
-  BadgeCheck,
-  Clock,
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useState } from 'react'
+import { useAdminResetPassword } from '@/hooks/use-staff'
+import { TemporaryPasswordDialog } from '@/components/shared/temporary-password-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAuth, useStaffBase } from '@/hooks/use-auth'
 
 export function MemberDetail() {
@@ -35,9 +43,9 @@ export function MemberDetail() {
   const { data: repaymentHistory } = useMemberRepaymentHistory(memberId)
   const approveMember = useApproveMember()
   const rejectMember = useRejectMember()
-  const verifyIncome = useVerifyIncome()
-
-  const [incomeInput, setIncomeInput] = useState('')
+  const resetPassword = useAdminResetPassword()
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [tempPassword, setTempPassword] = useState<{ email: string; password: string } | null>(null)
 
   if (isLoading) return <LoadingSkeleton type="detail" />
   if (error) return <ErrorState message="Failed to load member details" onRetry={() => refetch()} />
@@ -49,7 +57,7 @@ export function MemberDetail() {
     <div>
       <PageHeader
         title={member.full_name}
-        description={`Member ID: ${member.member_id}`}
+        description={`MAN Number: ${member.member_id}`}
         actions={
           <StatusBadge status={member.membership_status} />
         }
@@ -90,6 +98,7 @@ export function MemberDetail() {
                       <div>
                         <p className="text-xs text-muted-foreground">Department</p>
                         <p className="text-sm font-medium">{member.department}</p>
+                        {member.school && <p className="text-xs text-muted-foreground">{member.school}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -122,65 +131,14 @@ export function MemberDetail() {
                       {member.employment_status.replace(/_/g, ' ').toLowerCase()}
                     </p>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Declared Monthly Income</p>
-                    <p className="text-sm font-bold text-primary">
-                      {formatCurrency(member.monthly_income)}
-                    </p>
-                  </div>
                   <div className="border-t pt-3">
-                    <p className="text-xs text-muted-foreground mb-1">Income Verification</p>
-                    {member.income_verified ? (
-                      <p className="text-sm font-medium flex items-center gap-1.5 text-primary">
-                        <BadgeCheck className="w-4 h-4" />
-                        Verified
-                        {member.verified_income != null &&
-                          ` — ${formatCurrency(member.verified_income)}`}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-amber-600 flex items-center gap-1.5">
-                        <Clock className="w-4 h-4" /> Not verified
+                    <p className="text-xs text-muted-foreground">Times applied for a loan</p>
+                    <p className="text-sm font-bold text-primary">{member.application_count}</p>
+                    {member.application_count === 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Next application will be a first-time application (priority)
                       </p>
                     )}
-                    <div className="mt-2 space-y-2">
-                      <Label htmlFor="verified_income" className="text-xs text-muted-foreground">
-                        Verified income (K)
-                      </Label>
-                      <Input
-                        id="verified_income"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder={String(member.monthly_income ?? '')}
-                        value={incomeInput}
-                        onChange={(e) => setIncomeInput(e.target.value)}
-                      />
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        disabled={verifyIncome.isPending || incomeInput === ''}
-                        onClick={() =>
-                          verifyIncome.mutate(
-                            {
-                              id: member.id,
-                              data: { verified_income: Number(incomeInput) },
-                            },
-                            {
-                              onSuccess: () => {
-                                toast.success('Income verified')
-                                setIncomeInput('')
-                              },
-                              onError: () => toast.error('Failed to verify income'),
-                            }
-                          )
-                        }
-                      >
-                        {verifyIncome.isPending && (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        )}
-                        Verify income
-                      </Button>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -238,6 +196,20 @@ export function MemberDetail() {
                       </Button>
                     </div>
                   )}
+                  {isAdmin && (
+                    <div className="border-t pt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        disabled={resetPassword.isPending}
+                        onClick={() => setConfirmReset(true)}
+                      >
+                        {resetPassword.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Reset password
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -258,7 +230,6 @@ export function MemberDetail() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Loan ID</th>
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Principal</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Repaid</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Outstanding</th>
@@ -276,7 +247,6 @@ export function MemberDetail() {
                               {loan.loan_id}
                             </Link>
                           </td>
-                          <td className="px-3 py-2">{loan.loan_type_name}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.principal)}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.amount_repaid)}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.outstanding_balance)}</td>
@@ -336,6 +306,31 @@ export function MemberDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset {member.full_name}'s password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their current password stops working and a temporary one is shown for you to hand over.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmReset(false)
+                resetPassword.mutate(member.user.id, {
+                  onSuccess: (r) => setTempPassword({ email: r.email, password: r.temporary_password }),
+                  onError: () => toast.error('Failed to reset the password'),
+                })
+              }}
+            >
+              Reset password
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <TemporaryPasswordDialog value={tempPassword} onClose={() => setTempPassword(null)} />
     </div>
   )
 }

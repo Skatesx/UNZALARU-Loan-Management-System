@@ -4,24 +4,44 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useLoanTypes, useCreateLoanApplication } from '@/hooks/use-loans'
 import { loanApplicationSchema, type LoanApplicationFormData } from '@/lib/validators'
+import type { LoanType } from '@/types/loan'
 import { PendingFeatureGate } from '@/components/shared/pending-member-banner'
 import { PageHeader } from '@/components/shared/page-header'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/shared/empty-state'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
 import { formatCurrency } from '@/lib/formatters'
 import { toast } from 'sonner'
 import { Loader2, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react'
+
+/** Total to repay for the loan product, matching the backend calculation. */
+function totalRepayment(product: LoanType, amount: number, months: number) {
+  const rate = Number(product.interest_rate) / 100
+  if (product.interest_method === 'FLAT_ONCE') return amount * (1 + rate)
+  return amount * (1 + rate * months / 12)
+}
 
 export function ApplyLoan() {
   const navigate = useNavigate()
   const { data: loanTypes, isLoading: loadingTypes } = useLoanTypes()
   const createApplication = useCreateLoanApplication()
   const [step, setStep] = useState(1)
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null)
+
+  // Members only see active loan products; UNZALARU has a single flat loan
+  const product: LoanType | undefined = Array.isArray(loanTypes) ? loanTypes[0] : undefined
+  const amounts = product?.allowed_amounts?.length
+    ? product.allowed_amounts.map(Number)
+    : []
+  const monthOptions = product
+    ? Array.from(
+        { length: product.max_duration_months - product.min_duration_months + 1 },
+        (_, i) => product.min_duration_months + i
+      )
+    : []
 
   const {
     register,
@@ -34,49 +54,58 @@ export function ApplyLoan() {
   } = useForm<LoanApplicationFormData>({
     resolver: zodResolver(loanApplicationSchema),
     defaultValues: {
-      loan_type: 0,
       requested_amount: 0,
-      duration_months: 1,
+      duration_months: 0,
       purpose: '',
     },
   })
 
-  const amount = watch('requested_amount')
-  const duration = watch('duration_months')
+  const amount = Number(watch('requested_amount')) || 0
+  const duration = Number(watch('duration_months')) || 0
   const purpose = watch('purpose')
-  const selectedType = Array.isArray(loanTypes) ? loanTypes.find((t: any) => t.id === selectedTypeId) : null
 
-  // Validation failures must never be silent: show a toast naming the problem
-  // and jump back to the step where the user can fix it. (Step 3 renders no
-  // inputs, so without this a failed submit looked like a dead button.)
+  const total = product && amount && duration ? totalRepayment(product, amount, duration) : 0
+  const monthly = total && duration ? total / duration : 0
+
+  // Validation failures must never be silent: say what's wrong and go back
+  // to the details step (the review step has no inputs).
   const onInvalid = (errs: Record<string, { message?: string }>) => {
-    const order: Array<[keyof LoanApplicationFormData, number]> = [
-      ['loan_type', 1],
-      ['requested_amount', 2],
-      ['duration_months', 2],
-      ['purpose', 2],
-    ]
-    const first = order.find(([key]) => errs[key])
+    const first = (['requested_amount', 'duration_months', 'purpose'] as const).find((k) => errs[k])
     toast.error(
-      first?.[0] && errs[first[0]]?.message
-        ? errs[first[0]].message!
-        : 'Please complete all fields before submitting',
+      (first && errs[first]?.message) || 'Please complete all fields before submitting',
       { duration: 8000 }
     )
-    if (first) setStep(first[1])
+    setStep(1)
   }
 
-  const estimatedMonthly = selectedType && amount && duration
-    ? (amount * (1 + Number(selectedType.interest_rate) / 100 * duration / 12)) / duration
-    : 0
+  const goToReview = () => {
+    let valid = true
+    if (!amount) {
+      setError('requested_amount', { message: 'Choose how much you want to borrow' })
+      valid = false
+    }
+    if (!duration) {
+      setError('duration_months', { message: 'Choose a repayment period' })
+      valid = false
+    }
+    if (!purpose || purpose.trim().length < 10) {
+      setError('purpose', { message: 'Please describe the purpose (at least 10 characters)' })
+      valid = false
+    }
+    if (valid) {
+      clearErrors()
+      setStep(2)
+    }
+  }
 
   const onSubmit = async (data: LoanApplicationFormData) => {
-    if (!selectedTypeId) {
-      toast.error('Please select a loan type')
-      return
-    }
     try {
-      await createApplication.mutateAsync({ ...data, loan_type: selectedTypeId })
+      await createApplication.mutateAsync({
+        requested_amount: Number(data.requested_amount),
+        duration_months: Number(data.duration_months),
+        purpose: data.purpose,
+        loan_type: product?.id,
+      })
       toast.success('Loan application submitted!')
       navigate('/member/my-applications')
     } catch (err: unknown) {
@@ -91,92 +120,95 @@ export function ApplyLoan() {
 
   if (loadingTypes) return <LoadingSkeleton type="form" />
 
-  const types = Array.isArray(loanTypes) ? loanTypes : []
+  if (!product) {
+    return (
+      <EmptyState
+        title="Loans are not available right now"
+        description="Please check back later or contact a UNZALARU administrator."
+      />
+    )
+  }
 
   return (
     <PendingFeatureGate feature="Loan applications">
       <div>
-      <PageHeader title="Apply for Loan" description="Complete the loan application form" />
+      <PageHeader
+        title="Apply for Loan"
+        description={`${product.name}: ${Number(product.interest_rate)}% interest${
+          product.interest_method === 'FLAT_ONCE' ? ', charged once' : ''
+        }`}
+      />
 
       {/* Step indicator */}
       <div className="flex items-center justify-center mb-8">
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <div key={s} className="flex items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
               step >= s ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
             }`}>
               {step > s ? <CheckCircle className="w-4 h-4" /> : s}
             </div>
-            {s < 3 && <div className={`w-16 h-0.5 ${step > s ? 'bg-emerald-600' : 'bg-muted'}`} />}
+            {s < 2 && <div className={`w-16 h-0.5 ${step > s ? 'bg-emerald-600' : 'bg-muted'}`} />}
           </div>
         ))}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
-        {/* Step 1: Select Loan Type */}
+        {/* Step 1: Loan details */}
         {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-medium text-center mb-6">Select Loan Type</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {types.map((lt: any) => (
-                <Card
-                  key={lt.id}
-                  className={`cursor-pointer transition-all ${
-                    selectedTypeId === lt.id
-                      ? 'ring-2 ring-emerald-500 border-emerald-500'
-                      : 'hover:border-input'
-                  }`}
-                  onClick={() => {
-                    setSelectedTypeId(lt.id)
-                    // Keep React Hook Form state in sync — the hidden-input
-                    // approach left the form value at 0 and silently blocked
-                    // final submission.
-                    setValue('loan_type', lt.id, { shouldValidate: false })
-                  }}
-                >
-                  <CardContent className="p-5">
-                    <h3 className="font-semibold">{lt.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{lt.description}</p>
-                    <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground/70">Amount</p>
-                        <p className="font-medium">K{Number(lt.min_amount).toLocaleString()} — K{Number(lt.max_amount).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground/70">Interest</p>
-                        <p className="font-medium">{lt.interest_rate}% ({lt.interest_method})</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground/70">Duration</p>
-                        <p className="font-medium">{lt.min_duration_months}—{lt.max_duration_months} months</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Loan Details */}
-        {step === 2 && (
-          <div className="max-w-lg mx-auto space-y-4">
+          <div className="max-w-lg mx-auto space-y-5">
             <h2 className="text-lg font-medium text-center mb-6">Loan Details</h2>
+
             <div className="space-y-2">
-              <Label>Requested Amount (K)</Label>
-              <Input type="number" step="0.01" {...register('requested_amount')} />
+              <Label>How much do you want to borrow?</Label>
+              <div className="grid grid-cols-3 gap-3" role="radiogroup" aria-label="Loan amount">
+                {amounts.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={amount === value}
+                    onClick={() => {
+                      setValue('requested_amount', value)
+                      clearErrors('requested_amount')
+                    }}
+                    className={`rounded-lg border px-3 py-4 text-center font-semibold transition-all ${
+                      amount === value
+                        ? 'border-emerald-500 ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
+                        : 'hover:border-input bg-card'
+                    }`}
+                  >
+                    {formatCurrency(value)}
+                  </button>
+                ))}
+              </div>
               {errors.requested_amount && <p className="text-sm text-destructive">{errors.requested_amount.message}</p>}
-              {selectedType && (
-                <p className="text-xs text-muted-foreground/70">
-                  Range: K{Number(selectedType.min_amount).toLocaleString()} — K{Number(selectedType.max_amount).toLocaleString()}
-                </p>
-              )}
             </div>
+
             <div className="space-y-2">
-              <Label>Duration (months)</Label>
-              <Input type="number" {...register('duration_months')} />
+              <Label>Repayment period</Label>
+              <Select
+                value={duration ? String(duration) : ''}
+                items={Object.fromEntries(monthOptions.map((m) => [String(m), `${m} month${m === 1 ? '' : 's'}`]))}
+                onValueChange={(v) => {
+                  setValue('duration_months', Number(v))
+                  clearErrors('duration_months')
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose number of months" />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((m) => (
+                    <SelectItem key={m} value={String(m)}>
+                      {m} month{m === 1 ? '' : 's'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.duration_months && <p className="text-sm text-destructive">{errors.duration_months.message}</p>}
             </div>
+
             <div className="space-y-2">
               <Label>Purpose</Label>
               <Textarea {...register('purpose')} placeholder="Describe the purpose of this loan..." rows={4} />
@@ -184,18 +216,22 @@ export function ApplyLoan() {
             </div>
 
             {/* Preview */}
-            {amount > 0 && duration > 0 && (
+            {total > 0 && (
               <Card className="bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200">
                 <CardContent className="p-4 space-y-2">
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Estimated Repayment</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Monthly Installment</p>
-                      <p className="font-bold">{formatCurrency(estimatedMonthly)}</p>
+                      <p className="text-xs text-muted-foreground">Interest</p>
+                      <p className="font-bold">{formatCurrency(total - amount)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Total Repayment</p>
-                      <p className="font-bold">{formatCurrency(estimatedMonthly * duration)}</p>
+                      <p className="font-bold">{formatCurrency(total)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Monthly</p>
+                      <p className="font-bold">{formatCurrency(monthly)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -204,27 +240,35 @@ export function ApplyLoan() {
           </div>
         )}
 
-        {/* Step 3: Review & Submit */}
-        {step === 3 && (
+        {/* Step 2: Review & Submit */}
+        {step === 2 && (
           <div className="max-w-lg mx-auto space-y-4">
             <h2 className="text-lg font-medium text-center mb-6">Review & Submit</h2>
             <Card>
               <CardContent className="p-5 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Loan Type</span>
-                  <span className="font-medium">{selectedType?.name}</span>
+                  <span className="text-muted-foreground">Loan</span>
+                  <span className="font-medium">{product.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Amount</span>
-                  <span className="font-medium">{formatCurrency(Number(amount) || 0)}</span>
+                  <span className="font-medium">{formatCurrency(amount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium">{duration} months</span>
+                  <span className="text-muted-foreground">Repayment period</span>
+                  <span className="font-medium">{duration} month{duration === 1 ? '' : 's'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Interest ({Number(product.interest_rate)}%)</span>
+                  <span className="font-medium">{formatCurrency(total - amount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total to repay</span>
+                  <span className="font-medium">{formatCurrency(total)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Est. Monthly</span>
-                  <span className="font-bold text-primary">{formatCurrency(estimatedMonthly)}</span>
+                  <span className="font-bold text-primary">{formatCurrency(monthly)}</span>
                 </div>
                 <div className="border-t pt-3">
                   <p className="text-xs text-muted-foreground mb-1">Purpose</p>
@@ -238,59 +282,14 @@ export function ApplyLoan() {
         {/* Navigation */}
         <div className="flex justify-center gap-3 mt-8">
           {step > 1 && (
-            <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>
+            <Button type="button" variant="outline" onClick={() => setStep(1)}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Previous
             </Button>
           )}
           {/* Distinct keys stop React reusing the Next button as the Submit
               button, which would turn the click on Next into a form submit */}
-          {step < 3 ? (
-            <Button
-              key="next"
-              type="button"
-              onClick={() => {
-                if (step === 1 && !selectedTypeId) {
-                  toast.error('Please select a loan type')
-                  return
-                }
-                if (step === 2 && selectedType) {
-                  // Validate loan-type limits before advancing so users see
-                  // inline errors instead of a backend rejection later.
-                  const amt = Number(amount)
-                  const dur = Number(duration)
-                  if (!amt || amt <= 0) {
-                    setError('requested_amount', { message: 'Amount must be positive' })
-                    return
-                  }
-                  if (amt < Number(selectedType.min_amount) || amt > Number(selectedType.max_amount)) {
-                    setError('requested_amount', {
-                      message: `Amount must be between K${Number(selectedType.min_amount).toLocaleString()} and K${Number(selectedType.max_amount).toLocaleString()}`,
-                    })
-                    return
-                  }
-                  if (!dur || dur < 1) {
-                    setError('duration_months', { message: 'Duration must be at least 1 month' })
-                    return
-                  }
-                  if (dur < selectedType.min_duration_months || dur > selectedType.max_duration_months) {
-                    setError('duration_months', {
-                      message: `Duration must be between ${selectedType.min_duration_months} and ${selectedType.max_duration_months} months`,
-                    })
-                    return
-                  }
-                  if (!purpose || purpose.trim().length < 10) {
-                    setError('purpose', {
-                      message: 'Please describe the purpose (at least 10 characters)',
-                    })
-                    return
-                  }
-                  clearErrors('requested_amount')
-                  clearErrors('duration_months')
-                  clearErrors('purpose')
-                }
-                setStep(step + 1)
-              }}
-            >
+          {step === 1 ? (
+            <Button key="next" type="button" onClick={goToReview}>
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (

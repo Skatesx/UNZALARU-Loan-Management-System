@@ -49,7 +49,6 @@ export function AuditLog() {
             <SelectItem value="MEMBER_UPDATED">Updated Member</SelectItem>
             <SelectItem value="MEMBER_APPROVED">Approved Member</SelectItem>
             <SelectItem value="MEMBER_REJECTED">Rejected Member</SelectItem>
-            <SelectItem value="INCOME_VERIFIED">Verified Income</SelectItem>
           </SelectContent>
         </Select>
       </div>

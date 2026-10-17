@@ -7,7 +7,7 @@ class EligibilityRule(models.Model):
     """Configurable rule for eligibility scoring."""
 
     FACTOR_CHOICES = [
-        ('INCOME', 'Income'),
+        ('APPLICATION_HISTORY', 'Application History'),
         ('EMPLOYMENT', 'Employment Stability'),
         ('OBLIGATIONS', 'Existing Obligations'),
         ('REPAYMENT_HISTORY', 'Repayment History'),

@@ -22,9 +22,7 @@ export const CRITERIA_KEY = 'loan_approval_criteria'
 
 interface CriteriaConfig {
   min_eligibility_score: number
-  max_installment_income_ratio: number
   max_active_loans: number
-  require_income_verification: boolean
   reject_if_any_overdue: boolean
   reject_if_defaulter: boolean
   require_active_membership: boolean
@@ -36,17 +34,9 @@ const CRITERIA_LABELS: Record<keyof CriteriaConfig, { label: string; hint: strin
     label: 'Minimum eligibility score (0–100)',
     hint: 'Applications scoring below this are flagged.',
   },
-  max_installment_income_ratio: {
-    label: 'Max installment-to-income ratio',
-    hint: 'e.g. 0.5 means the monthly installment may not exceed 50% of income.',
-  },
   max_active_loans: {
     label: 'Max simultaneous active loans',
     hint: 'Cap per member across all loan types.',
-  },
-  require_income_verification: {
-    label: 'Require income verification',
-    hint: 'An admin must verify income before approval passes.',
   },
   reject_if_any_overdue: {
     label: 'Reject if any overdue installment',
@@ -68,10 +58,8 @@ const CRITERIA_LABELS: Record<keyof CriteriaConfig, { label: string; hint: strin
 
 const CRITERIA_ORDER: (keyof CriteriaConfig)[] = [
   'min_eligibility_score',
-  'max_installment_income_ratio',
   'max_active_loans',
   'min_membership_days',
-  'require_income_verification',
   'reject_if_any_overdue',
   'reject_if_defaulter',
   'require_active_membership',

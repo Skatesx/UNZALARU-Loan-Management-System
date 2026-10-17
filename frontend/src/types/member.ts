@@ -12,14 +12,14 @@ export interface Member {
   phone_number: string
   address: string
   department: string
+  school: string
   employment_status: EmploymentStatus
-  monthly_income: number
-  income_verified: boolean
-  verified_income: number | null
   membership_status: MembershipStatus
   approved_by: number | null
   approval_date: string | null
   account_status: AccountStatus
+  /** Loan applications made by the member (cancelled ones excluded) */
+  application_count: number
   full_name: string
   email: string
   created_at: string
@@ -32,16 +32,17 @@ export interface MemberListItem {
   full_name: string
   email: string
   department: string
+  school: string
   employment_status: EmploymentStatus
-  monthly_income: number
-  income_verified: boolean
-  verified_income: number | null
   membership_status: MembershipStatus
   account_status: AccountStatus
+  application_count: number
   created_at: string
 }
 
 export interface MemberCreateRequest {
+  /** MAN number */
+  member_id: string
   email: string
   username: string
   first_name: string
@@ -50,12 +51,14 @@ export interface MemberCreateRequest {
   nrc_number: string
   phone_number: string
   address: string
+  school: string
   department: string
   employment_status: EmploymentStatus
-  monthly_income: number
 }
 
 export interface MemberSignupRequest {
+  /** MAN number */
+  member_id: string
   email: string
   first_name: string
   last_name: string
@@ -63,9 +66,9 @@ export interface MemberSignupRequest {
   nrc_number: string
   phone_number: string
   address: string
+  school: string
   department: string
   employment_status: EmploymentStatus
-  monthly_income: number
 }
 
 export interface MemberSignupResponse {
@@ -74,18 +77,13 @@ export interface MemberSignupResponse {
   membership_status: MembershipStatus
 }
 
-export interface IncomeVerificationRequest {
-  verified_income?: number | null
-  notes?: string
-}
-
 export interface MemberUpdateRequest {
   nrc_number?: string
   phone_number?: string
   address?: string
+  school?: string
   department?: string
   employment_status?: EmploymentStatus
-  monthly_income?: number
   membership_status?: MembershipStatus
   account_status?: AccountStatus
 }

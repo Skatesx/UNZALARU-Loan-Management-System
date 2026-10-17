@@ -36,7 +36,7 @@ export function LoanDetail() {
 
   const [showRepaymentForm, setShowRepaymentForm] = useState(false)
   const [repaymentAmount, setRepaymentAmount] = useState('')
-  const [repaymentMode, setRepaymentMode] = useState<PaymentMode>('CASH')
+  const [repaymentMode, setRepaymentMode] = useState<PaymentMode>('SALARY_DEDUCTION')
   const [repaymentNotes, setRepaymentNotes] = useState('')
 
   if (isLoading) return <LoadingSkeleton type="detail" />
@@ -60,7 +60,7 @@ export function LoanDetail() {
       toast.success('Repayment recorded successfully')
       setShowRepaymentForm(false)
       setRepaymentAmount('')
-      setRepaymentMode('CASH')
+      setRepaymentMode('SALARY_DEDUCTION')
       setRepaymentNotes('')
       refetch()
     } catch {

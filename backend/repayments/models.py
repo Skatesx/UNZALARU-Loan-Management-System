@@ -88,3 +88,46 @@ class Repayment(models.Model):
         if not self.repayment_id:
             self.repayment_id = f'RPY-{uuid.uuid4().hex[:8].upper()}'
         super().save(*args, **kwargs)
+
+
+class PayrollRun(models.Model):
+    """A month's salary deductions, confirmed once payroll has run.
+
+    UNZALARU sends payroll a deduction list (each member's installment plus
+    arrears); after payroll runs, an admin confirms what was actually
+    deducted, which records the repayments. Each month is confirmed once.
+    """
+
+    month = models.DateField(unique=True, help_text='First day of the payroll month')
+    total_due = models.DecimalField(max_digits=14, decimal_places=2)
+    total_deducted = models.DecimalField(max_digits=14, decimal_places=2)
+    bank_amount = models.DecimalField(
+        max_digits=14, decimal_places=2, null=True, blank=True,
+        help_text='Amount payroll remitted to the UNZALARU bank account, if entered',
+    )
+    notes = models.TextField(blank=True)
+    confirmed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, related_name='payroll_runs'
+    )
+    confirmed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-month']
+
+    def __str__(self):
+        return f'Payroll deductions {self.month:%B %Y}'
+
+
+class PayrollDeduction(models.Model):
+    """What was due and what payroll deducted for one loan in a payroll run."""
+
+    run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE, related_name='deductions')
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE, related_name='payroll_deductions')
+    current_due = models.DecimalField(max_digits=12, decimal_places=2)
+    arrears = models.DecimalField(max_digits=12, decimal_places=2)
+    amount_due = models.DecimalField(max_digits=12, decimal_places=2)
+    amount_deducted = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        unique_together = ['run', 'loan']
+        ordering = ['loan__member__member_id']

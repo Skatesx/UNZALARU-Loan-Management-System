@@ -4,6 +4,8 @@ import { apiClient } from '@/api/client'
 interface ReportParams {
   member_id?: string
   status?: string
+  school?: string
+  department?: string
   classification?: string
   date_from?: string
   date_to?: string
@@ -49,6 +51,36 @@ export function useEligibilityReport(params: ReportParams = {}) {
   })
 }
 
+export interface MembershipReport {
+  total: number
+  by_status: { status: string; count: number }[]
+  by_school: { school: string; count: number }[]
+  by_department: { department: string; count: number }[]
+  members: {
+    member_id: string
+    member_name: string
+    email: string
+    school: string
+    department: string
+    employment_status: string
+    membership_status: string
+    application_count: number
+    registered: string
+  }[]
+}
+
+export function useMembershipReport(params: ReportParams = {}) {
+  return useQuery({
+    queryKey: ['reports', 'membership', params],
+    queryFn: async () => {
+      const response = await apiClient.get<MembershipReport>('/reports/membership/', { params })
+      return response.data
+    },
+    // Keep showing the last results while a new filter loads
+    placeholderData: (previous) => previous,
+  })
+}
+
 export function useExportReport(type: 'loans' | 'repayments', format: 'csv' | 'pdf') {
   return useQuery({
     queryKey: ['reports', 'export', type, format],
@@ -62,9 +94,14 @@ export function useExportReport(type: 'loans' | 'repayments', format: 'csv' | 'p
   })
 }
 
-export async function downloadReport(type: 'loans' | 'repayments', format: 'csv' | 'pdf') {
+export async function downloadReport(
+  type: 'loans' | 'repayments' | 'membership',
+  format: 'csv' | 'pdf',
+  params: ReportParams = {},
+) {
   const response = await apiClient.get(`/reports/${type}/export/${format}/`, {
     responseType: 'blob',
+    params,
   })
   const url = window.URL.createObjectURL(new Blob([response.data]))
   const link = document.createElement('a')

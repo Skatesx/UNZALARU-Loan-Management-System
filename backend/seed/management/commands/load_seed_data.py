@@ -11,7 +11,7 @@ from loans.criteria import CRITERIA_KEY, DEFAULT_CRITERIA
 from loans.models import Loan, LoanApplication, LoanType
 from members.models import Member
 from notifications.models import Notification
-from repayments.models import Repayment, RepaymentSchedule
+from repayments.models import PayrollRun, Repayment, RepaymentSchedule
 from users.models import User
 
 PAYMENT_MODES = ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE', 'SALARY_DEDUCTION']
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             '--reset',
             action='store_true',
             help=(
-                'Delete existing loan applications, loans, repayments, '
+                'Delete existing loan applications, loans, repayments, payroll runs, '
                 'notifications and audit entries, and return the demo pending '
                 'members to PENDING, before loading fresh demo data'
             ),
@@ -47,20 +47,31 @@ class Command(BaseCommand):
         apps_deleted, _ = LoanApplication.objects.all().delete()
         Notification.objects.all().delete()
         AuditLog.objects.all().delete()
+        PayrollRun.objects.all().delete()  # confirmed salary deduction months
         Member.objects.filter(user__email__in=PENDING_MEMBER_EMAILS).update(
             membership_status='PENDING',
             account_status='ACTIVE',
             approved_by=None,
             approval_date=None,
-            income_verified=False,
-            verified_income=None,
-            income_verified_by=None,
         )
         User.objects.filter(email__in=PENDING_MEMBER_EMAILS).update(is_active=True)
         self.stdout.write(self.style.WARNING(
-            'Reset: removed existing applications, loans, repayments, '
+            'Reset: removed existing applications, loans, repayments, payroll runs, '
             'notifications and audit entries'
         ))
+
+    def use_man_number(self, member, man_number):
+        """Move demo members off IDs that aren't 6-digit MAN numbers (old MBR- or 5-digit ones)."""
+        if not (len(member.member_id) == 6 and member.member_id.isdigit()):
+            member.member_id = man_number
+            member.save(update_fields=['member_id'])
+
+    def use_demo_school(self, member, school, department):
+        """Give demo members created before the school field a school and department."""
+        if not member.school:
+            member.school = school
+            member.department = department
+            member.save(update_fields=['school', 'department'])
 
     def handle(self, *args, **options):
         self.stdout.write('Loading seed data...')
@@ -106,74 +117,42 @@ class Command(BaseCommand):
         else:
             self.stdout.write('Supervisor user already exists')
 
-        # Create loan types
-        loan_types = []
-        loan_type_data = [
-            {
-                'name': 'Emergency Loan',
-                'description': 'Short-term emergency loan for urgent needs',
-                'min_amount': 1000,
-                'max_amount': 10000,
-                'min_duration_months': 3,
-                'max_duration_months': 6,
-                'interest_rate': 12,
-                'interest_method': 'FLAT',
-                'allow_multiple_active': False,
-            },
-            {
-                'name': 'Development Loan',
-                'description': 'Medium-term loan for personal development',
-                'min_amount': 5000,
-                'max_amount': 50000,
-                'min_duration_months': 6,
-                'max_duration_months': 24,
-                'interest_rate': 15,
-                'interest_method': 'FLAT',
-                'allow_multiple_active': False,
-            },
-            {
-                'name': 'Education Loan',
-                'description': 'Loan for educational purposes',
-                'min_amount': 2000,
-                'max_amount': 30000,
-                'min_duration_months': 6,
-                'max_duration_months': 36,
+        # UNZALARU offers a single flat loan; membership is the qualification
+        flat_loan, created = LoanType.objects.update_or_create(
+            name='Flat Loan',
+            defaults={
+                'description': (
+                    'UNZALARU members qualify by membership. Borrow K10,000, '
+                    'K15,000 or K20,000 at 10% interest charged once, repaid '
+                    'over 1-12 months.'
+                ),
+                'min_amount': 10000,
+                'max_amount': 20000,
+                'allowed_amounts': [10000, 15000, 20000],
+                'min_duration_months': 1,
+                'max_duration_months': 12,
                 'interest_rate': 10,
-                'interest_method': 'REDUCING_BALANCE',
+                'interest_method': 'FLAT_ONCE',
                 'allow_multiple_active': False,
+                'is_active': True,
             },
-            {
-                'name': 'Housing Loan',
-                'description': 'Long-term housing loan',
-                'min_amount': 20000,
-                'max_amount': 200000,
-                'min_duration_months': 12,
-                'max_duration_months': 60,
-                'interest_rate': 8,
-                'interest_method': 'REDUCING_BALANCE',
-                'allow_multiple_active': False,
-            },
-        ]
-
-        for data in loan_type_data:
-            lt, created = LoanType.objects.get_or_create(
-                name=data['name'], defaults=data
-            )
-            loan_types.append(lt)
-            if created:
-                self.stdout.write(f'Created loan type: {lt.name}')
+        )
+        LoanType.objects.exclude(pk=flat_loan.pk).update(is_active=False)
+        if created:
+            self.stdout.write('Created loan product: Flat Loan')
 
         # Create eligibility rules
         eligibility_rules = [
             {
-                'name': 'Income Score',
-                'factor': 'INCOME',
+                # Fewer earlier applications score higher: first-timers get priority
+                'name': 'Application History',
+                'factor': 'APPLICATION_HISTORY',
                 'weight': 30,
                 'thresholds': [
-                    {'min': 0, 'max': 3000, 'score': 20},
-                    {'min': 3001, 'max': 8000, 'score': 50},
-                    {'min': 8001, 'max': 15000, 'score': 75},
-                    {'min': 15001, 'max': None, 'score': 100},
+                    {'min': 0, 'max': 0, 'score': 100},
+                    {'min': 1, 'max': 1, 'score': 70},
+                    {'min': 2, 'max': 2, 'score': 40},
+                    {'min': 3, 'max': None, 'score': 10},
                 ],
             },
             {
@@ -231,10 +210,21 @@ class Command(BaseCommand):
         self.stdout.write('Configured default loan approval criteria')
 
         # Create member users
+        # (school / faculty, department) as members would enter them
         departments = [
-            'Computer Science', 'Mathematics', 'Physics', 'Chemistry',
-            'Biology', 'Economics', 'Business', 'Engineering',
-            'Law', 'Medicine', 'Education', 'Arts',
+            ('School of Natural Sciences', 'Computing and Informatics'),
+            ('School of Natural Sciences', 'Mathematics and Statistics'),
+            ('School of Natural Sciences', 'Physics'),
+            ('School of Natural Sciences', 'Chemistry'),
+            ('School of Humanities and Social Sciences', 'Economics'),
+            ('School of Humanities and Social Sciences', 'History'),
+            ('Graduate School of Business', 'Business Administration'),
+            ('School of Engineering', 'Civil and Environmental Engineering'),
+            ('School of Law', 'Public Law'),
+            ('School of Medicine', 'Internal Medicine'),
+            ('School of Education', 'Mathematics and Science Education'),
+            ('School of Nursing Sciences', 'Nursing'),
+            ('School of Mines', 'Mining Engineering'),
         ]
         employment_statuses = ['PERMANENT', 'CONTRACT', 'PART_TIME']
 
@@ -289,23 +279,23 @@ class Command(BaseCommand):
                 user.set_password('password123')
                 user.save()
 
-            income = random.randint(3000, 25000)
             emp_status = random.choice(employment_statuses)
 
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
+                    'member_id': str(102300 + i * 70),  # demo MAN number
                     'nrc_number': f'NRC-{random.randint(100000, 999999)}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} University Road, Lusaka',
-                    'department': random.choice(departments),
+                    'school': departments[i % len(departments)][0],
+                    'department': departments[i % len(departments)][1],
                     'employment_status': emp_status,
-                    'monthly_income': income,
                     'membership_status': 'ACTIVE',
-                    'income_verified': True,
-                    'verified_income': Decimal(income),
                 }
             )
+            self.use_man_number(member, str(102300 + i * 70))
+            self.use_demo_school(member, *departments[i % len(departments)])
             members.append(member)
 
         self.stdout.write(self.style.SUCCESS(f'Created {len(members)} members'))
@@ -313,11 +303,11 @@ class Command(BaseCommand):
         # Create pending members awaiting approval
         pending_members = []
         pending_names = [
-            ('Chanda', 'Mwansa', 'Library Science'),
-            ('Mutale', 'Chewe', 'Veterinary Medicine'),
-            ('Bupe', 'Chisanga', 'Surveying'),
+            ('Chanda', 'Mwansa', 'School of Education', 'Library and Information Science'),
+            ('Mutale', 'Chewe', 'School of Veterinary Medicine', 'Clinical Studies'),
+            ('Bupe', 'Chisanga', 'School of Engineering', 'Geomatic Engineering'),
         ]
-        for idx, (first, last, dept) in enumerate(pending_names):
+        for idx, (first, last, school, dept) in enumerate(pending_names):
             email = f'{first.lower()}.{last.lower()}@unzalaru.com'
             user, created = User.objects.get_or_create(
                 email=email,
@@ -335,16 +325,18 @@ class Command(BaseCommand):
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
+                    'member_id': str(301010 + idx),  # demo MAN number
                     'nrc_number': f'NRC-P{100000 + idx}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
+                    'school': school,
                     'department': dept,
                     'employment_status': 'CONTRACT',
-                    'monthly_income': random.randint(4000, 12000),
                     'membership_status': 'PENDING',
-                    'income_verified': False,
                 }
             )
+            self.use_man_number(member, str(301010 + idx))
+            self.use_demo_school(member, school, dept)
             pending_members.append(member)
 
         self.stdout.write(self.style.SUCCESS(
@@ -373,11 +365,8 @@ class Command(BaseCommand):
             # Each member gets 1-3 applications
             num_apps = random.randint(1, 3)
             for _ in range(num_apps):
-                loan_type = random.choice(loan_types)
-                amount = random.randint(
-                    int(loan_type.min_amount),
-                    int(loan_type.max_amount)
-                )
+                loan_type = flat_loan
+                amount = random.choice(loan_type.allowed_amounts)
                 duration = random.randint(
                     loan_type.min_duration_months,
                     loan_type.max_duration_months
@@ -397,10 +386,6 @@ class Command(BaseCommand):
                         'employer': 'University of Zambia',
                         'position': random.choice(['Lecturer', 'Senior Lecturer', 'Professor', 'Researcher']),
                         'years': random.randint(1, 20),
-                    },
-                    income_info={
-                        'monthly_salary': float(member.monthly_income),
-                        'other_income': random.randint(0, 5000),
                     },
                     rejection_reason=(
                         'Member already has an active loan'

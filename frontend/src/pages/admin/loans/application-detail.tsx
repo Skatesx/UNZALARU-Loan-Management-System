@@ -313,12 +313,22 @@ export function ApplicationDetail() {
                 </Link>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Member ID</p>
+                <p className="text-xs text-muted-foreground">MAN Number</p>
                 <p className="text-sm font-medium">{application.member?.member_id}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Department</p>
                 <p className="text-sm">{application.member?.department}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Loan applications before this one</p>
+                {application.is_first_time_applicant ? (
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    None. First-time applicant (priority)
+                  </p>
+                ) : (
+                  <p className="text-sm font-medium">{application.previous_applications}</p>
+                )}
               </div>
             </CardContent>
           </Card>

@@ -1,6 +1,7 @@
 import uuid
 
 from django.db import models
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from members.models import Member
@@ -13,6 +14,9 @@ class LoanType(models.Model):
     INTEREST_METHOD_CHOICES = [
         ('FLAT', 'Flat Rate'),
         ('REDUCING_BALANCE', 'Reducing Balance'),
+        # UNZALARU flat loans: interest_rate% of the amount, charged once
+        # regardless of the repayment period (K10,000 at 10% -> repay K11,000)
+        ('FLAT_ONCE', 'Flat (charged once)'),
     ]
 
     name = models.CharField(max_length=100)
@@ -26,6 +30,11 @@ class LoanType(models.Model):
         max_length=20, choices=INTEREST_METHOD_CHOICES, default='FLAT'
     )
     allow_multiple_active = models.BooleanField(default=False)
+    allowed_amounts = models.JSONField(
+        default=list, blank=True,
+        help_text='Fixed amounts members may borrow, e.g. [10000, 15000, 20000]; '
+                  'empty allows any amount between min_amount and max_amount',
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -37,6 +46,11 @@ class LoanType(models.Model):
 
     def __str__(self):
         return f'{self.name} ({self.interest_rate}% {self.get_interest_method_display()})'
+
+    @classmethod
+    def current(cls):
+        """The loan product members apply for (UNZALARU offers a single flat loan)."""
+        return cls.objects.filter(is_active=True).order_by('id').first()
 
 
 class LoanApplication(models.Model):
@@ -86,6 +100,55 @@ class LoanApplication(models.Model):
         if not self.application_id:
             self.application_id = f'APP-{uuid.uuid4().hex[:8].upper()}'
         super().save(*args, **kwargs)
+
+    @property
+    def previous_applications(self):
+        """How many loan applications the member made before this one.
+
+        Cancelled applications don't count. 0 means a first-time applicant,
+        who gets priority. List views annotate this as
+        `annotated_previous_applications` (see previous_applications_subquery).
+        """
+        annotated = self.__dict__.get('annotated_previous_applications')
+        if annotated is not None:
+            return annotated
+        return (
+            LoanApplication.objects.filter(member_id=self.member_id)
+            .filter(
+                # Ties (same timestamp) are broken by creation order
+                models.Q(application_date__lt=self.application_date)
+                | models.Q(application_date=self.application_date, pk__lt=self.pk)
+            )
+            .exclude(status='CANCELLED')
+            .count()
+        )
+
+    @property
+    def is_first_time_applicant(self):
+        return self.previous_applications == 0
+
+
+def previous_applications_subquery():
+    """Per-application count of the member's earlier, non-cancelled applications."""
+    earlier = (
+        LoanApplication.objects.filter(member_id=models.OuterRef('member_id'))
+        .filter(
+            # Ties (same timestamp) are broken by creation order
+            models.Q(application_date__lt=models.OuterRef('application_date'))
+            | models.Q(
+                application_date=models.OuterRef('application_date'),
+                pk__lt=models.OuterRef('pk'),
+            )
+        )
+        .exclude(status='CANCELLED')
+        .order_by()
+        .values('member_id')
+        .annotate(n=models.Count('pk'))
+        .values('n')
+    )
+    return Coalesce(
+        models.Subquery(earlier, output_field=models.IntegerField()), 0
+    )
 
 
 class Loan(models.Model):

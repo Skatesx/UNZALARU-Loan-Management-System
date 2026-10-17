@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from members.models import Member
 from users.permissions import IsAdminUser, IsStaffUser, IsOwnerOrAdmin
 
-from .models import Loan, LoanApplication, LoanType
+from .models import Loan, LoanApplication, LoanType, previous_applications_subquery
 from .serializers import (
     ApproveApplicationSerializer,
     LoanApplicationCreateSerializer,
@@ -50,22 +50,31 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         'member__member_id', 'member__user__first_name',
         'member__user__last_name', 'member__user__email',
     ]
-    ordering_fields = ['application_date', 'requested_amount', 'status']
+    # `?ordering=priority` puts first-time applicants first (fewest earlier
+    # applications), oldest application first within the same count.
+    ordering_fields = [
+        'application_date', 'requested_amount', 'status',
+        'annotated_previous_applications',
+    ]
 
     def get_queryset(self):
         user = self.request.user
-        if IsStaffUser().has_permission(self.request, self):
-            return LoanApplication.objects.select_related(
-                'member', 'member__user', 'loan_type', 'reviewed_by'
-            ).all()
-        # Members can only see their own applications
-        try:
-            member = Member.objects.get(user=user)
-            return LoanApplication.objects.select_related(
-                'member', 'member__user', 'loan_type', 'reviewed_by'
-            ).filter(member=member)
-        except Member.DoesNotExist:
-            return LoanApplication.objects.none()
+        queryset = LoanApplication.objects.select_related(
+            'member', 'member__user', 'loan_type', 'reviewed_by'
+        ).annotate(annotated_previous_applications=previous_applications_subquery())
+        if not IsStaffUser().has_permission(self.request, self):
+            # Members can only see their own applications
+            try:
+                member = Member.objects.get(user=user)
+            except Member.DoesNotExist:
+                return LoanApplication.objects.none()
+            queryset = queryset.filter(member=member)
+        if self.request.query_params.get('ordering') == 'priority':
+            queryset = queryset.order_by(
+                'annotated_previous_applications', 'application_date', 'pk'
+            )
+        # OrderingFilter ignores the unknown 'priority' value, so this order stands
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -101,7 +110,9 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         with the message as a plain string.
         """
         member = Member.objects.get(user=self.request.user)
-        loan_type = serializer.validated_data['loan_type']
+        loan_type = serializer.validated_data.get('loan_type') or LoanType.current()
+        if loan_type is None:
+            raise ValueError('No loan product is currently available')
 
         service = LoanApplicationService()
         application = service.create_application(
@@ -111,7 +122,6 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
             duration_months=serializer.validated_data['duration_months'],
             purpose=serializer.validated_data['purpose'],
             employment_info=serializer.validated_data.get('current_employment_info', {}),
-            income_info=serializer.validated_data.get('income_info', {}),
             obligations=serializer.validated_data.get('existing_loan_obligations', []),
         )
         # Return the created application

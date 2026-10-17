@@ -2,7 +2,7 @@ import type { MemberListItem } from './member'
 
 export type LoanApplicationStatus = 'PENDING' | 'UNDER_REVIEW' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 export type LoanStatus = 'ACTIVE' | 'COMPLETED' | 'DEFAULTED' | 'WRITTEN_OFF'
-export type InterestMethod = 'FLAT' | 'REDUCING_BALANCE'
+export type InterestMethod = 'FLAT' | 'REDUCING_BALANCE' | 'FLAT_ONCE'
 
 export interface LoanType {
   id: number
@@ -15,6 +15,8 @@ export interface LoanType {
   interest_rate: number
   interest_method: InterestMethod
   allow_multiple_active: boolean
+  /** Fixed amounts members may borrow; empty = any amount in range */
+  allowed_amounts: number[]
   is_active: boolean
   created_at: string
   updated_at: string
@@ -46,6 +48,9 @@ export interface LoanApplication {
   reviewed_by_name: string | null
   reviewed_at: string | null
   eligibility: EligibilityAssessment | null
+  /** Applications the member made before this one; 0 = first-time applicant */
+  previous_applications: number
+  is_first_time_applicant: boolean
   created_at: string
   updated_at: string
 }
@@ -75,15 +80,17 @@ export interface LoanApplicationListItem {
   duration_months: number
   status: LoanApplicationStatus
   application_date: string
+  previous_applications: number
+  is_first_time_applicant: boolean
 }
 
 export interface LoanApplicationCreateRequest {
-  loan_type: number
+  /** Optional: the backend uses the active flat loan when omitted */
+  loan_type?: number
   requested_amount: number
   duration_months: number
   purpose: string
   current_employment_info?: Record<string, unknown>
-  income_info?: Record<string, unknown>
   existing_loan_obligations?: unknown[]
 }
 

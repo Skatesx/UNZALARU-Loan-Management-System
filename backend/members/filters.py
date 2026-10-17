@@ -14,17 +14,11 @@ class MemberFilter(django_filters.FilterSet):
     registered_before = django_filters.DateFilter(
         field_name='created_at', lookup_expr='date__lte'
     )
-    min_income = django_filters.NumberFilter(
-        field_name='monthly_income', lookup_expr='gte'
-    )
-    max_income = django_filters.NumberFilter(
-        field_name='monthly_income', lookup_expr='lte'
-    )
 
     class Meta:
         model = Member
         fields = [
-            'department', 'employment_status', 'membership_status',
+            'department', 'school', 'employment_status', 'membership_status',
             'account_status',
         ]
 

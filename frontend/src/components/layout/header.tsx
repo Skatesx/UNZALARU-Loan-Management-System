@@ -11,12 +11,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sun, Moon, Bell, LogOut, User, ChevronDown, CheckCheck, PanelTop } from 'lucide-react'
+import { Sun, Moon, Bell, LogOut, User, ChevronDown, CheckCheck, PanelTop, KeyRound } from 'lucide-react'
+import { useState } from 'react'
+import { ChangePasswordDialog } from '@/components/shared/change-password-dialog'
 import { Link, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 export function Header() {
   const { user, logout, isAdmin, isSupervisor } = useAuth()
+  const [changingPassword, setChangingPassword] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
@@ -145,6 +148,10 @@ export function Header() {
             <User className="w-4 h-4" />
             Profile
           </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer" onClick={() => setChangingPassword(true)}>
+            <KeyRound className="w-4 h-4" />
+            Change password
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={logout}
@@ -155,6 +162,7 @@ export function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ChangePasswordDialog open={changingPassword} onOpenChange={setChangingPassword} />
     </header>
   )
 }

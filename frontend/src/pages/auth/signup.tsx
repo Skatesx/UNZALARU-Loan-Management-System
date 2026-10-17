@@ -41,7 +41,7 @@ const EMPLOYMENT_OPTIONS = [
 /* Fields validated before leaving each step (keys of SignupFormData). */
 const STEP_FIELDS: Array<Array<keyof SignupFormData>> = [
   ['first_name', 'last_name', 'email'],
-  ['nrc_number', 'phone_number', 'department', 'employment_status', 'monthly_income', 'address'],
+  ['member_id', 'nrc_number', 'phone_number', 'school', 'department', 'employment_status', 'address'],
   ['password', 'confirm_password'],
 ]
 
@@ -124,7 +124,7 @@ export function SignupPage() {
       // DRF returns field errors as { field: [messages] }
       for (const [field, messages] of Object.entries(data)) {
         if (Array.isArray(messages) && messages.length > 0) {
-          const label = field.replace(/_/g, ' ')
+          const label = field === 'member_id' ? 'MAN number' : field.replace(/_/g, ' ')
           return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${messages[0]}`
         }
         if (typeof messages === 'string') {
@@ -147,6 +147,7 @@ export function SignupPage() {
     try {
       setServerError(null)
       const response = await authApi.signup({
+        member_id: data.member_id,
         email: data.email,
         first_name: data.first_name,
         last_name: data.last_name,
@@ -154,9 +155,9 @@ export function SignupPage() {
         nrc_number: data.nrc_number,
         phone_number: data.phone_number,
         address: data.address,
+        school: data.school,
         department: data.department,
         employment_status: data.employment_status,
-        monthly_income: data.monthly_income,
       })
       setSuccessMessage(
         response.message ||
@@ -167,6 +168,10 @@ export function SignupPage() {
       const message = extractError(err, 'Registration failed. Please check your details and try again.')
       setServerError(message)
       // Jump back to the step owning the offending field.
+      if (message.toLowerCase().includes('man number')) {
+        setError('member_id', { message })
+        setStep(1)
+      }
       if (message.toLowerCase().includes('nrc')) {
         setError('nrc_number', { message })
         setStep(1)
@@ -203,7 +208,7 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <AuthStoryPanel headline="Start borrowing with your union." />
+      <AuthStoryPanel headline="Your financial well-being is our priority." />
 
       <main className="relative flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-10 overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -265,6 +270,17 @@ export function SignupPage() {
                 {/* Step 2 — employee details */}
                 {step === 1 && (
                   <div className="space-y-4 animate-side-fade" key="s1">
+                    <div className="space-y-2">
+                      <Label htmlFor="member_id">MAN number</Label>
+                      <Input id="member_id" className="h-10" inputMode="numeric" maxLength={6} placeholder="Your 6-digit UNZA MAN number" {...register('member_id')} />
+                      {errors.member_id && (
+                        <p className="text-sm text-destructive">{errors.member_id.message}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        This becomes your member ID in the system.
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="nrc_number">NRC number</Label>
@@ -282,10 +298,18 @@ export function SignupPage() {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="school">School / Faculty</Label>
+                      <Input id="school" className="h-10" placeholder="e.g. School of Natural Sciences" {...register('school')} />
+                      {errors.school && (
+                        <p className="text-sm text-destructive">{errors.school.message}</p>
+                      )}
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="department">Department</Label>
-                        <Input id="department" className="h-10" placeholder="e.g. Computer Science" {...register('department')} />
+                        <Input id="department" className="h-10" placeholder="e.g. Computing and Informatics" {...register('department')} />
                         {errors.department && (
                           <p className="text-sm text-destructive">{errors.department.message}</p>
                         )}
@@ -315,25 +339,6 @@ export function SignupPage() {
                           <p className="text-sm text-destructive">{errors.employment_status.message}</p>
                         )}
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="monthly_income">Declared monthly income (K)</Label>
-                      <Input
-                        id="monthly_income"
-                        className="h-10"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="e.g. 8500"
-                        {...register('monthly_income')}
-                      />
-                      {errors.monthly_income && (
-                        <p className="text-sm text-destructive">{errors.monthly_income.message}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        An administrator must verify this before you can borrow.
-                      </p>
                     </div>
 
                     <div className="space-y-2">

@@ -4,6 +4,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from audit.services import AuditService
 from notifications.services import NotificationService
@@ -11,9 +12,8 @@ from users.permissions import IsAdminUser, IsStaffUser
 from users.models import User
 
 from .filters import MemberFilter
-from .models import Member
+from .models import APPLICATION_COUNT, Member
 from .serializers import (
-    IncomeVerificationSerializer,
     MemberCreateSerializer,
     MemberListSerializer,
     MemberSelfSignupSerializer,
@@ -21,6 +21,33 @@ from .serializers import (
     MemberSerializer,
     MemberUpdateSerializer,
 )
+
+
+class SchoolListView(APIView):
+    """Schools/faculties and departments that members have entered.
+
+    Used for the report filter dropdowns, so they only offer categories that
+    exist in the member records.
+    """
+
+    permission_classes = [IsStaffUser]
+
+    def get(self, request):
+        groups = {}
+        rows = (
+            Member.objects.exclude(school='')
+            .values_list('school', 'department')
+            .distinct()
+            .order_by('school', 'department')
+        )
+        for school, department in rows:
+            groups.setdefault(school, [])
+            if department and department not in groups[school]:
+                groups[school].append(department)
+        return Response([
+            {'school': school, 'departments': departments}
+            for school, departments in groups.items()
+        ])
 
 
 class MemberSignupView(generics.CreateAPIView):
@@ -69,8 +96,7 @@ class MemberViewSet(viewsets.ModelViewSet):
     Member management endpoints.
 
     Admins manage members fully (create, update, approve/reject, delete).
-    Supervisors have read access plus income verification, which feeds the
-    loan approval workflow; lifecycle actions remain admin-only.
+    Supervisors have read access; lifecycle actions remain admin-only.
     """
 
     permission_classes = [IsAdminUser]
@@ -79,19 +105,21 @@ class MemberViewSet(viewsets.ModelViewSet):
         'member_id', 'user__first_name', 'user__last_name', 'user__email',
         'department',
     ]
-    ordering_fields = ['created_at', 'monthly_income']
+    ordering_fields = ['created_at', 'annotated_application_count']
 
     def get_permissions(self):
         # Members may access their own profile endpoints; everything else is staff.
         if self.action in ('me', 'update_me'):
             return [IsAuthenticated()]
         if self.action in ('list', 'retrieve', 'loan_history', 'repayment_history',
-                           'eligibility_history', 'defaulter_history', 'verify_income'):
+                           'eligibility_history', 'defaulter_history'):
             return [IsStaffUser()]
         return [permission() for permission in self.permission_classes]
 
     def get_queryset(self):
-        return Member.objects.select_related('user').all()
+        return Member.objects.select_related('user').annotate(
+            annotated_application_count=APPLICATION_COUNT
+        )
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -203,36 +231,6 @@ class MemberViewSet(viewsets.ModelViewSet):
                 f'Admin rejected member signup {member.full_name} '
                 f'({member.member_id}). Reason: {reason or "not provided"}'
             ),
-        )
-        return Response(MemberSerializer(member).data)
-
-    @action(detail=True, methods=['post'], url_path='verify-income')
-    def verify_income(self, request, pk=None):
-        """Verify (or update) a member's income. Admin action."""
-        member = self.get_object()
-        serializer = IncomeVerificationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        verified_income = serializer.validated_data.get('verified_income')
-        notes = serializer.validated_data.get('notes', '')
-
-        member.verified_income = verified_income
-        member.income_verified = True
-        member.income_verified_by = request.user
-        member.save()
-
-        NotificationService.notify_income_verified(member)
-        AuditService.log_action(
-            user=request.user,
-            action='INCOME_VERIFIED',
-            entity_type='Member',
-            entity_id=member.member_id,
-            description=(
-                f'Admin verified income for {member.member_id}: '
-                f'K{member.effective_income} ({notes})' if notes else
-                f'Admin verified income for {member.member_id}: K{member.effective_income}'
-            ),
-            new_value={'verified_income': str(verified_income)},
         )
         return Response(MemberSerializer(member).data)
 

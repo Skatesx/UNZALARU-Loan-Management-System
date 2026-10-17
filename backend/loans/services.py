@@ -58,9 +58,17 @@ class LoanCalculationService:
             dates.append(start_date.replace(year=year, month=month, day=day))
         return dates
 
+    @staticmethod
+    def calculate_flat_once_interest(principal, rate):
+        """Flat, charged once: interest = principal * rate, whatever the duration."""
+        total_interest = Decimal(str(principal)) * (Decimal(str(rate)) / Decimal('100'))
+        return total_interest.quantize(Decimal('0.01'))
+
     def calculate_loan(self, principal, annual_rate, months, interest_method):
         """Calculate all loan details based on interest method."""
-        if interest_method == 'FLAT':
+        if interest_method == 'FLAT_ONCE':
+            total_interest = self.calculate_flat_once_interest(principal, annual_rate)
+        elif interest_method == 'FLAT':
             total_interest = self.calculate_flat_interest(principal, annual_rate, months)
         else:
             total_interest = self.calculate_reducing_balance_interest(principal, annual_rate, months)
@@ -110,6 +118,13 @@ class LoanApplicationService:
             raise ValueError('A valid loan type is required')
         if not loan_type.is_active:
             raise ValueError('This loan type is not currently available')
+
+        # Fixed-amount loans: only the listed amounts may be borrowed
+        if loan_type.allowed_amounts:
+            allowed = [Decimal(str(a)) for a in loan_type.allowed_amounts]
+            if Decimal(str(requested_amount)) not in allowed:
+                choices = ', '.join(f'K{a:,.0f}' for a in sorted(allowed))
+                raise ValueError(f'Loan amount must be one of: {choices}')
 
         # Validate amount within loan type limits
         if requested_amount < loan_type.min_amount:

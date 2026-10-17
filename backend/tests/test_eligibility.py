@@ -30,11 +30,8 @@ class TestEligibilityScoring:
         assert score.total_score <= 100
         assert score.recommendation in ['ELIGIBLE', 'REVIEW', 'NOT_ELIGIBLE']
 
-    def test_high_income_scores_high(self, member, loan_type, eligibility_rules):
-        """Member with high income scores higher on income factor."""
-        member.monthly_income = Decimal('20000')
-        member.save()
-
+    def test_first_time_applicant_scores_highest(self, member, loan_type, eligibility_rules):
+        """A member's first application gets the full application-history score."""
         app = LoanApplication.objects.create(
             member=member,
             loan_type=loan_type,
@@ -42,11 +39,27 @@ class TestEligibilityScoring:
             duration_months=6,
             purpose='Test',
         )
-        service = EligibilityScoringService()
-        score = service.calculate(app)
+        score = EligibilityScoringService().calculate(app)
 
-        assert 'INCOME' in score.breakdown
-        assert score.breakdown['INCOME'] > 20  # 30% weight * high score
+        assert score.breakdown['APPLICATION_HISTORY'] == 30.0  # 100 * 0.30
+        assert '✓ First-time applicant (priority)' in score.reasons
+
+    def test_repeat_applicant_scores_lower(self, member, loan_type, eligibility_rules):
+        """Each earlier (non-cancelled) application lowers the score."""
+        for status in ['REJECTED', 'CANCELLED', 'APPROVED']:
+            LoanApplication.objects.create(
+                member=member, loan_type=loan_type,
+                requested_amount=Decimal('5000'), duration_months=6,
+                purpose='Earlier', status=status,
+            )
+        app = LoanApplication.objects.create(
+            member=member, loan_type=loan_type,
+            requested_amount=Decimal('10000'), duration_months=6, purpose='Test',
+        )
+        assert app.previous_applications == 2  # the cancelled one doesn't count
+        score = EligibilityScoringService().calculate(app)
+
+        assert score.breakdown['APPLICATION_HISTORY'] == 12.0  # 40 * 0.30
 
     def test_first_time_borrower_neutral_score(self, member, loan_type, eligibility_rules):
         """First-time borrower gets neutral repayment score."""
@@ -87,10 +100,6 @@ class TestEligibilityScoring:
 
     def test_eligible_recommendation(self, member, loan_type, eligibility_rules):
         """High-scoring application gets ELIGIBLE recommendation."""
-        member.monthly_income = Decimal('25000')
-        member.verified_income = Decimal('25000')
-        member.save()
-
         app = LoanApplication.objects.create(
             member=member,
             loan_type=loan_type,

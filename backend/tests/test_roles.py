@@ -105,16 +105,6 @@ class TestSupervisorRole:
     def test_supervisor_can_view_members(self, supervisor_client):
         assert supervisor_client.get('/api/members/').status_code == 200
 
-    def test_supervisor_can_verify_income(self, supervisor_client, member):
-        response = supervisor_client.post(
-            f'/api/members/{member.id}/verify-income/',
-            {'verified_income': '9500.00'},
-        )
-        assert response.status_code == 200
-        member.refresh_from_db()
-        assert member.income_verified is True
-        assert member.verified_income == Decimal('9500.00')
-
     def test_supervisor_cannot_create_member(self, supervisor_client):
         response = supervisor_client.post('/api/members/', {})
         assert response.status_code == 403

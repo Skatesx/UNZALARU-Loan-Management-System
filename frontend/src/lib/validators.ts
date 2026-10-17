@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+// UNZA MAN (staff) number - same rule as the backend: exactly 6 digits
+const manNumber = z
+  .string()
+  .trim()
+  .min(1, 'MAN number is required')
+  .regex(/^\d{6}$/, 'A MAN number is exactly 6 digits')
+
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -8,6 +15,7 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>
 
 export const signupSchema = z.object({
+  member_id: manNumber,
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email address'),
@@ -16,11 +24,11 @@ export const signupSchema = z.object({
   nrc_number: z.string().min(1, 'NRC number is required'),
   phone_number: z.string().min(1, 'Phone number is required'),
   address: z.string().min(1, 'Address is required'),
+  school: z.string().trim().min(1, 'School / faculty is required'),
   department: z.string().min(1, 'Department is required'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
-  monthly_income: z.coerce.number().positive('Income must be positive'),
 }).refine((data) => data.password === data.confirm_password, {
   message: 'Passwords do not match',
   path: ['confirm_password'],
@@ -40,6 +48,7 @@ export const passwordChangeSchema = z.object({
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>
 
 export const memberCreateSchema = z.object({
+  member_id: manNumber,
   email: z.string().email('Please enter a valid email address'),
   username: z.string().min(3, 'Username must be at least 3 characters'),
   first_name: z.string().min(1, 'First name is required'),
@@ -48,17 +57,18 @@ export const memberCreateSchema = z.object({
   nrc_number: z.string().min(1, 'NRC number is required'),
   phone_number: z.string().min(1, 'Phone number is required'),
   address: z.string().min(1, 'Address is required'),
+  school: z.string().trim().min(1, 'School / faculty is required'),
   department: z.string().min(1, 'Department is required'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
-  monthly_income: z.coerce.number().positive('Income must be positive'),
 })
 
 export type MemberCreateFormData = z.infer<typeof memberCreateSchema>
 
 export const loanApplicationSchema = z.object({
-  loan_type: z.coerce.number().positive('Please select a loan type'),
+  // UNZALARU offers a single flat loan, filled in automatically
+  loan_type: z.coerce.number().optional(),
   requested_amount: z.coerce.number().positive('Amount must be positive'),
   duration_months: z.coerce.number().int().positive('Duration must be positive'),
   purpose: z.string().min(10, 'Please provide more details about the purpose'),

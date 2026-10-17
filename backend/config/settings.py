@@ -202,3 +202,18 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
     'SCHEMA_PATH_PREFIX': '/api/',
 }
+
+
+# Email (password reset links)
+# Without a mail server, emails are printed in the backend's terminal window;
+# set EMAIL_BACKEND / EMAIL_HOST etc. in .env to send real email.
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=25, cast=int)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='UNZALARU Loans <no-reply@unzalaru.com>')
+
+# Where the frontend runs, for links in emails
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')

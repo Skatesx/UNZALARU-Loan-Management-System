@@ -1,7 +1,7 @@
 export interface EligibilityRule {
   id: number
   name: string
-  factor: 'INCOME' | 'EMPLOYMENT' | 'OBLIGATIONS' | 'REPAYMENT_HISTORY'
+  factor: 'APPLICATION_HISTORY' | 'EMPLOYMENT' | 'OBLIGATIONS' | 'REPAYMENT_HISTORY'
   weight: number
   thresholds: EligibilityThreshold[]
   is_active: boolean

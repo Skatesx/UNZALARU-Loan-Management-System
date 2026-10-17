@@ -187,14 +187,26 @@ export function AdminDashboard() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Outstanding Amounts by Loan Type">
+        <ChartCard title="Outstanding Balance by School">
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={(outstandingAmounts || []) as any[]}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="loan_type__name" fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
-              <YAxis fontSize={12} tickFormatter={(v: any) => `K${(Number(v) / 1000).toFixed(0)}k`} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Outstanding']} />
-              <Bar dataKey="total" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Outstanding" />
+            <BarChart
+              layout="vertical"
+              margin={{ left: 8, right: 16 }}
+              data={((outstandingAmounts || []) as any[]).map((row) => ({
+                ...row,
+                // "School of Natural Sciences" -> "Natural Sciences" to fit the axis
+                label: String(row.school).replace(/^School of /, ''),
+              }))}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="opacity-30" horizontal={false} />
+              <XAxis type="number" fontSize={12} tickFormatter={(v: any) => `K${(Number(v) / 1000).toFixed(0)}k`} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <YAxis type="category" dataKey="label" width={140} fontSize={12} tick={{ fill: 'currentColor', opacity: 0.55 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                labelFormatter={(_: any, items: readonly any[]) => items?.[0]?.payload?.school ?? ''}
+                formatter={(value: any) => [`K${Number(value).toLocaleString()}`, 'Outstanding']}
+              />
+              <Bar dataKey="total" fill="#F59E0B" radius={[0, 4, 4, 0]} name="Outstanding" />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

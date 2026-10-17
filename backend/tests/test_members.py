@@ -29,12 +29,29 @@ class TestMemberCRUD:
             'nrc_number': 'NRC-999999',
             'phone_number': '+260700000001',
             'address': '456 Test Road',
-            'department': 'Mathematics',
+            'school': 'School of Natural Sciences',
+            'department': 'Mathematics and Statistics',
             'employment_status': 'PERMANENT',
-            'monthly_income': 12000,
+            'member_id': '456780',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
-        assert Member.objects.filter(nrc_number='NRC-999999').exists()
+        assert Member.objects.get(nrc_number='NRC-999999').member_id == '456780'
+
+    def test_member_list_shows_application_count(
+        self, auth_client_admin, member, loan_type
+    ):
+        """Each member's number of loan applications is listed (cancelled excluded)."""
+        from loans.models import LoanApplication
+
+        for status_value in ['PENDING', 'REJECTED', 'CANCELLED']:
+            LoanApplication.objects.create(
+                member=member, loan_type=loan_type, requested_amount=5000,
+                duration_months=6, purpose='Test', status=status_value,
+            )
+        response = auth_client_admin.get('/api/members/')
+        row = next(r for r in response.data['results'] if r['id'] == member.id)
+        assert row['application_count'] == 2
+        assert 'monthly_income' not in row
 
     def test_admin_can_get_member_detail(self, auth_client_admin, member):
         """Admin can view member details."""

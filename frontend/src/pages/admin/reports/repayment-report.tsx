@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRepaymentReport, downloadReport } from '@/hooks/use-reports'
 import { PageHeader } from '@/components/shared/page-header'
+import { ReportTabs } from '@/components/reports/report-tabs'
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ErrorState } from '@/components/shared/error-state'
@@ -38,6 +39,7 @@ export function RepaymentReport() {
 
   return (
     <div>
+      <ReportTabs />
       <PageHeader
         title="Repayment Report"
         description={`${repayments.length} repayments`}

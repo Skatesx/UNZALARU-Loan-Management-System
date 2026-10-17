@@ -11,6 +11,8 @@ import { SupervisorLayout } from '@/components/layout/supervisor-layout'
 import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
+import { ResetPasswordPage } from '@/pages/auth/reset-password'
+import { StaffAccounts } from '@/pages/admin/staff/staff-accounts'
 import { AdminDashboard } from '@/pages/admin/dashboard'
 import { MemberList } from '@/pages/admin/members/member-list'
 import { MemberDetail } from '@/pages/admin/members/member-detail'
@@ -20,11 +22,13 @@ import { ApplicationDetail } from '@/pages/admin/loans/application-detail'
 import { LoanList } from '@/pages/admin/loans/loan-list'
 import { LoanDetail as AdminLoanDetail } from '@/pages/admin/loans/loan-detail'
 import { RepaymentList } from '@/pages/admin/repayments/repayment-list'
+import { PayrollDeductions } from '@/pages/admin/repayments/payroll-deductions'
 import { DefaulterList } from '@/pages/admin/defaulters/defaulter-list'
 import { LoanReport } from '@/pages/admin/reports/loan-report'
 import { RepaymentReport } from '@/pages/admin/reports/repayment-report'
 import { DefaulterReport } from '@/pages/admin/reports/defaulter-report'
 import { EligibilityReport } from '@/pages/admin/reports/eligibility-report'
+import { MembershipReport } from '@/pages/admin/reports/membership-report'
 import { AuditLog } from '@/pages/admin/audit/audit-log'
 import { LoanTypeConfig } from '@/pages/admin/config/loan-types'
 import { EligibilityRuleConfig } from '@/pages/admin/config/eligibility-rules'
@@ -82,6 +86,14 @@ function App() {
                     </GuestGuard>
                   }
                 />
+                <Route
+                  path="/reset-password"
+                  element={
+                    <GuestGuard>
+                      <ResetPasswordPage />
+                    </GuestGuard>
+                  }
+                />
 
                 {/* Admin routes (ADMIN only) */}
                 <Route
@@ -102,13 +114,16 @@ function App() {
                   <Route path="loans/applications" element={<ApplicationList />} />
                   <Route path="loans/applications/:id" element={<ApplicationDetail />} />
                   <Route path="repayments" element={<RepaymentList />} />
+                  <Route path="payroll-deductions" element={<PayrollDeductions />} />
                   <Route path="defaulters" element={<DefaulterList />} />
                   <Route path="reports/loans" element={<LoanReport />} />
                   <Route path="reports/repayments" element={<RepaymentReport />} />
                   <Route path="reports/defaulters" element={<DefaulterReport />} />
                   <Route path="reports/eligibility" element={<EligibilityReport />} />
+                  <Route path="reports/membership" element={<MembershipReport />} />
                   <Route path="audit" element={<AuditLog />} />
                   <Route path="config/loan-types" element={<LoanTypeConfig />} />
+                  <Route path="staff" element={<StaffAccounts />} />
                   <Route path="config/eligibility-rules" element={<EligibilityRuleConfig />} />
                   <Route path="notifications" element={<AdminNotificationList />} />
                 </Route>
@@ -131,11 +146,13 @@ function App() {
                   <Route path="loans/applications" element={<ApplicationList />} />
                   <Route path="loans/applications/:id" element={<ApplicationDetail />} />
                   <Route path="repayments" element={<RepaymentList />} />
+                  <Route path="payroll-deductions" element={<PayrollDeductions />} />
                   <Route path="defaulters" element={<DefaulterList />} />
                   <Route path="reports/loans" element={<LoanReport />} />
                   <Route path="reports/repayments" element={<RepaymentReport />} />
                   <Route path="reports/defaulters" element={<DefaulterReport />} />
                   <Route path="reports/eligibility" element={<EligibilityReport />} />
+                  <Route path="reports/membership" element={<MembershipReport />} />
                   <Route path="audit" element={<AuditLog />} />
                   <Route path="notifications" element={<AdminNotificationList />} />
                 </Route>

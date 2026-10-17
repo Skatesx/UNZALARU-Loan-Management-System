@@ -232,3 +232,40 @@ class TestLoanEndpoints:
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
         app.refresh_from_db()
         assert app.requested_amount == Decimal('5000')
+
+
+@pytest.mark.django_db
+class TestApplicationPriority:
+    """First-time applicants are shown first when sorting by priority."""
+
+    def test_priority_ordering_puts_first_timers_first(
+        self, auth_client_admin, member, pending_member, loan_type
+    ):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        def apply(m, days_ago, status_value='PENDING'):
+            app = LoanApplication.objects.create(
+                member=m, loan_type=loan_type, requested_amount=Decimal('5000'),
+                duration_months=6, purpose='Test', status=status_value,
+            )
+            LoanApplication.objects.filter(pk=app.pk).update(
+                application_date=timezone.now() - timedelta(days=days_ago)
+            )
+            return app
+
+        # `member` applied twice before; their newest application is the oldest pending one
+        apply(member, 30, 'REJECTED')
+        apply(member, 20, 'REJECTED')
+        repeat = apply(member, 10)
+        first_timer = apply(pending_member, 1)
+
+        response = auth_client_admin.get(
+            '/api/loan-applications/', {'status': 'PENDING', 'ordering': 'priority'}
+        )
+        rows = response.data['results']
+        assert [r['application_id'] for r in rows] == [
+            first_timer.application_id, repeat.application_id,
+        ]
+        assert rows[0]['is_first_time_applicant'] is True
+        assert rows[1]['previous_applications'] == 2
