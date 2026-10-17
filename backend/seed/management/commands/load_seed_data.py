@@ -60,8 +60,8 @@ class Command(BaseCommand):
         ))
 
     def use_man_number(self, member, man_number):
-        """Move demo members created before MAN numbers off their old MBR- IDs."""
-        if member.member_id.startswith('MBR-'):
+        """Move demo members off IDs that aren't 6-digit MAN numbers (old MBR- or 5-digit ones)."""
+        if not (len(member.member_id) == 6 and member.member_id.isdigit()):
             member.member_id = man_number
             member.save(update_fields=['member_id'])
 
@@ -283,7 +283,7 @@ class Command(BaseCommand):
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
-                    'member_id': str(10230 + i * 7),  # demo MAN number
+                    'member_id': str(102300 + i * 70),  # demo MAN number
                     'nrc_number': f'NRC-{random.randint(100000, 999999)}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} University Road, Lusaka',
@@ -293,7 +293,7 @@ class Command(BaseCommand):
                     'membership_status': 'ACTIVE',
                 }
             )
-            self.use_man_number(member, str(10230 + i * 7))
+            self.use_man_number(member, str(102300 + i * 70))
             self.use_demo_school(member, *departments[i % len(departments)])
             members.append(member)
 
@@ -324,7 +324,7 @@ class Command(BaseCommand):
             member, created = Member.objects.get_or_create(
                 user=user,
                 defaults={
-                    'member_id': str(30101 + idx),  # demo MAN number
+                    'member_id': str(301010 + idx),  # demo MAN number
                     'nrc_number': f'NRC-P{100000 + idx}',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
@@ -334,7 +334,7 @@ class Command(BaseCommand):
                     'membership_status': 'PENDING',
                 }
             )
-            self.use_man_number(member, str(30101 + idx))
+            self.use_man_number(member, str(301010 + idx))
             self.use_demo_school(member, school, dept)
             pending_members.append(member)
 

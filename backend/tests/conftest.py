@@ -46,7 +46,7 @@ def member(member_user):
     """Create an approved member profile."""
     return Member.objects.create(
         user=member_user,
-        member_id='10001',
+        member_id='100001',
         nrc_number='NRC-123456',
         phone_number='+260700000000',
         address='123 Test Road, Lusaka',
@@ -61,7 +61,7 @@ def pending_member(pending_member_user):
     """Create a pending (unapproved) member profile."""
     return Member.objects.create(
         user=pending_member_user,
-        member_id='10002',
+        member_id='100002',
         nrc_number='NRC-PENDING1',
         phone_number='+260700000001',
         address='456 Test Road, Lusaka',

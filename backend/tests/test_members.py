@@ -32,10 +32,10 @@ class TestMemberCRUD:
             'school': 'School of Natural Sciences',
             'department': 'Mathematics and Statistics',
             'employment_status': 'PERMANENT',
-            'member_id': '45678',
+            'member_id': '456780',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
-        assert Member.objects.get(nrc_number='NRC-999999').member_id == '45678'
+        assert Member.objects.get(nrc_number='NRC-999999').member_id == '456780'
 
     def test_member_list_shows_application_count(
         self, auth_client_admin, member, loan_type

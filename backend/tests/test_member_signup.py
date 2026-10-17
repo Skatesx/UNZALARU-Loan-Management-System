@@ -31,7 +31,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
-            'member_id': '20001',
+            'member_id': '200001',
         }, content_type='application/json')
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -41,8 +41,8 @@ class TestMemberSignup:
         assert user.role == 'MEMBER'
         member = user.member_profile
         assert member.membership_status == 'PENDING'
-        assert member.member_id == '20001'
-        assert response.data['member_id'] == '20001'
+        assert member.member_id == '200001'
+        assert response.data['member_id'] == '200001'
 
     def test_signup_duplicate_email_rejected(self, api_client, member_user):
         """Signup with an existing email is rejected."""
@@ -57,7 +57,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
-            'member_id': '20002',
+            'member_id': '200002',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -75,7 +75,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
-            'member_id': '20003',
+            'member_id': '200003',
         }, content_type='application/json')
         # Second signup with same NRC
         response = api_client.post('/api/members/signup/', {
@@ -89,7 +89,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Chemistry',
             'employment_status': 'PERMANENT',
-            'member_id': '20004',
+            'member_id': '200004',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -130,7 +130,7 @@ class TestPendingMemberRestrictions:
             address='1 Test St',
             department='Law',
             employment_status='CONTRACT',
-            member_id='20099',
+            member_id='200099',
             membership_status='PENDING',
         )
 
@@ -202,11 +202,11 @@ class TestMemberApproval:
         """Self-update only changes contact details, not the MAN number."""
         auth_client_member.put(
             '/api/members/update_me/',
-            {'member_id': '99999'},
+            {'member_id': '999999'},
             content_type='application/json',
         )
         member.refresh_from_db()
-        assert member.member_id == '10001'
+        assert member.member_id == '100001'
 
 
 @pytest.mark.django_db
@@ -253,7 +253,13 @@ class TestManNumbers:
         response = self._signup(api_client, 'badman@test.com', 'NRC-BADMAN', 'a b!')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_man_number_is_normalised(self, api_client):
-        response = self._signup(api_client, 'lower@test.com', 'NRC-LOWER', ' ab123 ')
+    @pytest.mark.parametrize('man', ['12345', '1234567', '12345A', 'MBR-1234', '12 3456'])
+    def test_man_number_must_be_six_digits(self, api_client, man):
+        response = self._signup(api_client, 'six@test.com', 'NRC-SIX', man)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'exactly 6 digits' in str(response.data['member_id'])
+
+    def test_surrounding_spaces_are_ignored(self, api_client):
+        response = self._signup(api_client, 'spaces@test.com', 'NRC-SPACES', ' 123456 ')
         assert response.status_code == status.HTTP_201_CREATED
-        assert Member.objects.get(user__email='lower@test.com').member_id == 'AB123'
+        assert Member.objects.get(user__email='spaces@test.com').member_id == '123456'

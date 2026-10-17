@@ -91,7 +91,7 @@ export function MemberCreate() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="member_id">MAN Number *</Label>
-                  <Input id="member_id" placeholder="e.g. 10230" {...register('member_id')} />
+                  <Input id="member_id" inputMode="numeric" maxLength={6} placeholder="6 digits, e.g. 102300" {...register('member_id')} />
                   {errors.member_id && <p className="text-sm text-destructive">{errors.member_id.message}</p>}
                 </div>
                 <div className="space-y-2">

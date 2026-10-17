@@ -86,7 +86,7 @@ class TestSchools:
 
     def test_signup_requires_school(self, client):
         response = client.post(
-            '/api/members/signup/', {**SIGNUP, 'member_id': '55501'},
+            '/api/members/signup/', {**SIGNUP, 'member_id': '555001'},
             content_type='application/json',
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -94,11 +94,11 @@ class TestSchools:
 
     def test_any_school_name_is_accepted(self, client):
         response = client.post('/api/members/signup/', {
-            **SIGNUP, 'member_id': '55502', 'school': 'Directorate of Research',
+            **SIGNUP, 'member_id': '555002', 'school': 'Directorate of Research',
             'department': 'Grants Office',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
-        new = Member.objects.get(member_id='55502')
+        new = Member.objects.get(member_id='555002')
         assert new.school == 'Directorate of Research'
         assert new.department == 'Grants Office'
 
@@ -107,11 +107,11 @@ class TestSchools:
         member.department = 'Computer Science'
         member.save()
         response = client.post('/api/members/signup/', {
-            **SIGNUP, 'member_id': '55503',
+            **SIGNUP, 'member_id': '555003',
             'school': '  school of natural   sciences ', 'department': 'computer science',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
-        new = Member.objects.get(member_id='55503')
+        new = Member.objects.get(member_id='555003')
         assert new.school == 'School of Natural Sciences'
         assert new.department == 'Computer Science'
 

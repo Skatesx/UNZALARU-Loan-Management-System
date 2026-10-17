@@ -272,7 +272,7 @@ export function SignupPage() {
                   <div className="space-y-4 animate-side-fade" key="s1">
                     <div className="space-y-2">
                       <Label htmlFor="member_id">MAN number</Label>
-                      <Input id="member_id" className="h-10" placeholder="Your UNZA MAN number, e.g. 10230" {...register('member_id')} />
+                      <Input id="member_id" className="h-10" inputMode="numeric" maxLength={6} placeholder="Your 6-digit UNZA MAN number" {...register('member_id')} />
                       {errors.member_id && (
                         <p className="text-sm text-destructive">{errors.member_id.message}</p>
                       )}

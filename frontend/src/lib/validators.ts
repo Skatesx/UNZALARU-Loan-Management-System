@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
-// UNZA MAN (staff) number - same rule as the backend: 3-20 letters, digits or dashes
+// UNZA MAN (staff) number - same rule as the backend: exactly 6 digits
 const manNumber = z
   .string()
   .trim()
   .min(1, 'MAN number is required')
-  .regex(/^[A-Za-z0-9-]{3,20}$/, 'Enter a valid MAN number (3-20 letters, digits or dashes)')
+  .regex(/^\d{6}$/, 'A MAN number is exactly 6 digits')
 
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),

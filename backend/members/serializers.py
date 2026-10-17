@@ -6,16 +6,15 @@ from users.serializers import UserSerializer
 
 from .models import Member
 
-MAN_NUMBER_PATTERN = re.compile(r'^[A-Z0-9-]{3,20}$')
+# UNZA MAN (staff) numbers are exactly six digits
+MAN_NUMBER_PATTERN = re.compile(r'^\d{6}$')
 
 
 def validate_man_number(value):
     """Normalise a MAN number and check it is well-formed and unused."""
-    value = (value or '').strip().upper()
+    value = (value or '').strip()
     if not MAN_NUMBER_PATTERN.match(value):
-        raise serializers.ValidationError(
-            'Enter a valid MAN number (3-20 letters, digits or dashes)'
-        )
+        raise serializers.ValidationError('A MAN number is exactly 6 digits')
     if Member.objects.filter(member_id__iexact=value).exists():
         raise serializers.ValidationError(
             'A member with this MAN number already exists'
