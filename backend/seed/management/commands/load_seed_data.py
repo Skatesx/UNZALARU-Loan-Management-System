@@ -11,7 +11,7 @@ from loans.criteria import CRITERIA_KEY, DEFAULT_CRITERIA
 from loans.models import Loan, LoanApplication, LoanType
 from members.models import Member
 from notifications.models import Notification
-from repayments.models import Repayment, RepaymentSchedule
+from repayments.models import PayrollRun, Repayment, RepaymentSchedule
 from users.models import User
 
 PAYMENT_MODES = ['CASH', 'BANK_TRANSFER', 'MOBILE_MONEY', 'CHEQUE', 'SALARY_DEDUCTION']
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             '--reset',
             action='store_true',
             help=(
-                'Delete existing loan applications, loans, repayments, '
+                'Delete existing loan applications, loans, repayments, payroll runs, '
                 'notifications and audit entries, and return the demo pending '
                 'members to PENDING, before loading fresh demo data'
             ),
@@ -47,6 +47,7 @@ class Command(BaseCommand):
         apps_deleted, _ = LoanApplication.objects.all().delete()
         Notification.objects.all().delete()
         AuditLog.objects.all().delete()
+        PayrollRun.objects.all().delete()  # confirmed salary deduction months
         Member.objects.filter(user__email__in=PENDING_MEMBER_EMAILS).update(
             membership_status='PENDING',
             account_status='ACTIVE',
@@ -55,7 +56,7 @@ class Command(BaseCommand):
         )
         User.objects.filter(email__in=PENDING_MEMBER_EMAILS).update(is_active=True)
         self.stdout.write(self.style.WARNING(
-            'Reset: removed existing applications, loans, repayments, '
+            'Reset: removed existing applications, loans, repayments, payroll runs, '
             'notifications and audit entries'
         ))
 

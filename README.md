@@ -114,6 +114,30 @@ the schools and departments members have entered; CSV and PDF
 exports use the same filters. All report pages now have tabs to move between
 the Loans, Repayments, Defaulters, Eligibility and Membership reports.
 
+### Payroll deductions (salary-based repayments)
+
+Loans are repaid through salary deductions. **Lending → Payroll Deductions**
+(admins and supervisors; only admins confirm):
+
+1. Pick the payroll month. The list shows every member with an active loan:
+   MAN number, this month's installment, **arrears** from earlier months and
+   the total to deduct. Download it as CSV/PDF and send it to payroll.
+2. After payroll runs, **upload payroll's return** - a CSV with a MAN number
+   column and an amount deducted column (column names are matched loosely).
+   Each line is marked Deducted / Partly deducted / Not deducted, and MAN
+   numbers not on the list are flagged. Without a file, tick or edit the
+   amounts by hand. **Download return template** gives a pre-filled return to
+   edit, e.g. for a demo.
+3. Optionally enter the amount received in the bank (checked against the
+   total), then **Confirm**. The deducted amounts are recorded as
+   `SALARY_DEDUCTION` repayments (oldest installment first), anyone not
+   deducted stays in arrears and is classified as overdue, the month is locked
+   (it can only be confirmed once) and an audit entry is written.
+
+There is no direct link to the payroll system: UNZALARU exchanges files with
+payroll, as a separate loans board would. Manual repayments remain for
+exceptions (e.g. early settlement) and default to Salary Deduction.
+
 ### Repayment modes
 
 Every repayment records a payment mode: `CASH`, `BANK_TRANSFER`, `MOBILE_MONEY`,
@@ -136,5 +160,7 @@ has been removed from all APIs and UI in line with the updated requirements.
 - `GET/PUT /api/admin/config/system/` — system configuration (criteria live here)
 - `GET /api/members/schools/` — schools/faculties and departments members have entered (staff only; report filters)
 - `GET /api/reports/membership/?status=&school=&department=`, `.../membership/export/{csv|pdf}/`
+- `GET /api/payroll/deductions/?month=YYYY-MM`, `.../export/{csv|pdf|template}/?month=`
+- `POST /api/payroll/deductions/match/` (multipart `month`, `file`), `POST /api/payroll/deductions/confirm/`
 
 Full schema: `http://localhost:8000/api/docs/` (Swagger) or `/api/redoc/`.

@@ -20,6 +20,7 @@ import { ApplicationDetail } from '@/pages/admin/loans/application-detail'
 import { LoanList } from '@/pages/admin/loans/loan-list'
 import { LoanDetail as AdminLoanDetail } from '@/pages/admin/loans/loan-detail'
 import { RepaymentList } from '@/pages/admin/repayments/repayment-list'
+import { PayrollDeductions } from '@/pages/admin/repayments/payroll-deductions'
 import { DefaulterList } from '@/pages/admin/defaulters/defaulter-list'
 import { LoanReport } from '@/pages/admin/reports/loan-report'
 import { RepaymentReport } from '@/pages/admin/reports/repayment-report'
@@ -103,6 +104,7 @@ function App() {
                   <Route path="loans/applications" element={<ApplicationList />} />
                   <Route path="loans/applications/:id" element={<ApplicationDetail />} />
                   <Route path="repayments" element={<RepaymentList />} />
+                  <Route path="payroll-deductions" element={<PayrollDeductions />} />
                   <Route path="defaulters" element={<DefaulterList />} />
                   <Route path="reports/loans" element={<LoanReport />} />
                   <Route path="reports/repayments" element={<RepaymentReport />} />
@@ -133,6 +135,7 @@ function App() {
                   <Route path="loans/applications" element={<ApplicationList />} />
                   <Route path="loans/applications/:id" element={<ApplicationDetail />} />
                   <Route path="repayments" element={<RepaymentList />} />
+                  <Route path="payroll-deductions" element={<PayrollDeductions />} />
                   <Route path="defaulters" element={<DefaulterList />} />
                   <Route path="reports/loans" element={<LoanReport />} />
                   <Route path="reports/repayments" element={<RepaymentReport />} />
