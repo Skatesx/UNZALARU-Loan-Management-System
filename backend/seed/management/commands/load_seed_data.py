@@ -212,7 +212,7 @@ class Command(BaseCommand):
         # Create member users
         # (school / faculty, department) as members would enter them
         departments = [
-            ('School of Natural Sciences', 'Computer Science'),
+            ('School of Natural Sciences', 'Computing and Informatics'),
             ('School of Natural Sciences', 'Mathematics and Statistics'),
             ('School of Natural Sciences', 'Physics'),
             ('School of Natural Sciences', 'Chemistry'),

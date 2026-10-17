@@ -309,7 +309,7 @@ export function SignupPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="department">Department</Label>
-                        <Input id="department" className="h-10" placeholder="e.g. Computer Science" {...register('department')} />
+                        <Input id="department" className="h-10" placeholder="e.g. Computing and Informatics" {...register('department')} />
                         {errors.department && (
                           <p className="text-sm text-destructive">{errors.department.message}</p>
                         )}

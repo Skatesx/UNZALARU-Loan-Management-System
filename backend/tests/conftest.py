@@ -50,7 +50,7 @@ def member(member_user):
         nrc_number='NRC-123456',
         phone_number='+260700000000',
         address='123 Test Road, Lusaka',
-        department='Computer Science',
+        department='Computing and Informatics',
         employment_status='PERMANENT',
         membership_status='ACTIVE',
     )

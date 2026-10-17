@@ -76,7 +76,7 @@ SIGNUP = {
     'email': 'school@test.com', 'first_name': 'S', 'last_name': 'F',
     'password': 'securepass123', 'nrc_number': 'NRC-SCHOOL',
     'phone_number': '+260700000000', 'address': 'A',
-    'department': 'Computer Science', 'employment_status': 'PERMANENT',
+    'department': 'Computing and Informatics', 'employment_status': 'PERMANENT',
 }
 
 
@@ -104,16 +104,16 @@ class TestSchools:
 
     def test_spelling_matches_existing_entries(self, client, member):
         member.school = 'School of Natural Sciences'
-        member.department = 'Computer Science'
+        member.department = 'Computing and Informatics'
         member.save()
         response = client.post('/api/members/signup/', {
             **SIGNUP, 'member_id': '555003',
-            'school': '  school of natural   sciences ', 'department': 'computer science',
+            'school': '  school of natural   sciences ', 'department': 'computing and informatics',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
         new = Member.objects.get(member_id='555003')
         assert new.school == 'School of Natural Sciences'
-        assert new.department == 'Computer Science'
+        assert new.department == 'Computing and Informatics'
 
     def test_filter_options_come_from_members(self, auth_client_admin, member, pending_member):
         member.school, member.department = 'School of Law', 'Public Law'
@@ -134,7 +134,7 @@ class TestSchools:
 class TestMembershipReport:
     @pytest.fixture
     def staff_members(self, member, pending_member):
-        member.school, member.department = 'School of Natural Sciences', 'Computer Science'  # ACTIVE
+        member.school, member.department = 'School of Natural Sciences', 'Computing and Informatics'  # ACTIVE
         member.save()
         pending_member.school, pending_member.department = 'School of Law', 'Public Law'  # PENDING
         pending_member.save()
@@ -187,7 +187,7 @@ class TestMembershipReport:
         assert response.status_code == status.HTTP_200_OK
         body = response.content.decode()
         assert 'MAN Number' in body and 'Public Law' in body
-        assert 'Computer Science' not in body
+        assert 'Computing and Informatics' not in body
 
     def test_members_cannot_view(self, auth_client_member, member):
         response = auth_client_member.get('/api/reports/membership/')
