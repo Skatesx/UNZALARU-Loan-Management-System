@@ -19,4 +19,8 @@ urlpatterns = [
     # User management (admin only)
     path('users/', views.UserListCreateView.as_view(), name='user_list_create'),
     path('users/<int:pk>/', views.UserDetailView.as_view(), name='user_detail'),
+    path('users/<int:pk>/reset-password/', views.AdminResetPasswordView.as_view(),
+         name='user_reset_password'),
+    path('staff/', views.StaffListCreateView.as_view(), name='staff_list_create'),
+    path('staff/<int:pk>/', views.StaffDetailView.as_view(), name='staff_detail'),
 ]

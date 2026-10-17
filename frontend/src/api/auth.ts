@@ -25,8 +25,10 @@ export const authApi = {
     await apiClient.post('/auth/password-reset/', { email })
   },
 
-  confirmPasswordReset: async (token: string, newPassword: string): Promise<void> => {
+  /** uid and token come from the emailed reset link */
+  confirmPasswordReset: async (uid: string, token: string, newPassword: string): Promise<void> => {
     await apiClient.post('/auth/password-reset/confirm/', {
+      uid,
       token,
       new_password: newPassword,
     })

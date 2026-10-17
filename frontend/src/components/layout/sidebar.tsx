@@ -10,6 +10,7 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
+  UserCog,
   Bell,
   User,
   HandCoins,
@@ -63,6 +64,7 @@ const adminLinks: SidebarGroup[] = [
     label: 'System',
     links: [
       { label: 'Configuration', href: '/admin/config/loan-types', icon: Settings },
+      { label: 'Staff Accounts', href: '/admin/staff', icon: UserCog },
       { label: 'Notifications', href: '/admin/notifications', icon: Bell },
     ],
   },

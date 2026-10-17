@@ -11,6 +11,8 @@ import { SupervisorLayout } from '@/components/layout/supervisor-layout'
 import { LoginPage } from '@/pages/auth/login'
 import { SignupPage } from '@/pages/auth/signup'
 import { ForgotPasswordPage } from '@/pages/auth/forgot-password'
+import { ResetPasswordPage } from '@/pages/auth/reset-password'
+import { StaffAccounts } from '@/pages/admin/staff/staff-accounts'
 import { AdminDashboard } from '@/pages/admin/dashboard'
 import { MemberList } from '@/pages/admin/members/member-list'
 import { MemberDetail } from '@/pages/admin/members/member-detail'
@@ -84,6 +86,14 @@ function App() {
                     </GuestGuard>
                   }
                 />
+                <Route
+                  path="/reset-password"
+                  element={
+                    <GuestGuard>
+                      <ResetPasswordPage />
+                    </GuestGuard>
+                  }
+                />
 
                 {/* Admin routes (ADMIN only) */}
                 <Route
@@ -113,6 +123,7 @@ function App() {
                   <Route path="reports/membership" element={<MembershipReport />} />
                   <Route path="audit" element={<AuditLog />} />
                   <Route path="config/loan-types" element={<LoanTypeConfig />} />
+                  <Route path="staff" element={<StaffAccounts />} />
                   <Route path="config/eligibility-rules" element={<EligibilityRuleConfig />} />
                   <Route path="notifications" element={<AdminNotificationList />} />
                 </Route>

@@ -49,7 +49,6 @@ export function MyApplications() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application ID</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan Type</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
@@ -60,7 +59,6 @@ export function MyApplications() {
                 {applications.map((app) => (
                   <tr key={app.id} className="border-b last:border-b-0 hover:bg-muted/50 ">
                     <td className="px-4 py-3 font-medium">{app.application_id}</td>
-                    <td className="px-4 py-3">{app.loan_type_name}</td>
                     <td className="px-4 py-3">{formatCurrency(app.requested_amount)}</td>
                     <td className="px-4 py-3">{app.duration_months} months</td>
                     <td className="px-4 py-3"><StatusBadge status={app.status} /></td>

@@ -28,7 +28,6 @@ export function MyLoans() {
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan ID</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Principal</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Repaid</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Outstanding</th>
@@ -47,7 +46,6 @@ export function MyLoans() {
                         {loan.loan_id}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">{loan.loan_type_name}</td>
                     <td className="px-4 py-3 font-medium">{formatCurrency(loan.principal)}</td>
                     <td className="px-4 py-3">{formatCurrency(loan.amount_repaid)}</td>
                     <td className="px-4 py-3 font-medium text-amber-600">{formatCurrency(loan.outstanding_balance)}</td>

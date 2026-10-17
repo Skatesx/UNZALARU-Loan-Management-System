@@ -17,6 +17,19 @@ import {
   Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useState } from 'react'
+import { useAdminResetPassword } from '@/hooks/use-staff'
+import { TemporaryPasswordDialog } from '@/components/shared/temporary-password-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAuth, useStaffBase } from '@/hooks/use-auth'
 
 export function MemberDetail() {
@@ -30,6 +43,9 @@ export function MemberDetail() {
   const { data: repaymentHistory } = useMemberRepaymentHistory(memberId)
   const approveMember = useApproveMember()
   const rejectMember = useRejectMember()
+  const resetPassword = useAdminResetPassword()
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [tempPassword, setTempPassword] = useState<{ email: string; password: string } | null>(null)
 
   if (isLoading) return <LoadingSkeleton type="detail" />
   if (error) return <ErrorState message="Failed to load member details" onRetry={() => refetch()} />
@@ -180,6 +196,20 @@ export function MemberDetail() {
                       </Button>
                     </div>
                   )}
+                  {isAdmin && (
+                    <div className="border-t pt-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        disabled={resetPassword.isPending}
+                        onClick={() => setConfirmReset(true)}
+                      >
+                        {resetPassword.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Reset password
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -200,7 +230,6 @@ export function MemberDetail() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Loan ID</th>
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Principal</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Repaid</th>
                         <th className="text-left px-3 py-2 font-medium text-muted-foreground">Outstanding</th>
@@ -218,7 +247,6 @@ export function MemberDetail() {
                               {loan.loan_id}
                             </Link>
                           </td>
-                          <td className="px-3 py-2">{loan.loan_type_name}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.principal)}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.amount_repaid)}</td>
                           <td className="px-3 py-2">{formatCurrency(loan.outstanding_balance)}</td>
@@ -278,6 +306,31 @@ export function MemberDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset {member.full_name}'s password?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Their current password stops working and a temporary one is shown for you to hand over.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmReset(false)
+                resetPassword.mutate(member.user.id, {
+                  onSuccess: (r) => setTempPassword({ email: r.email, password: r.temporary_password }),
+                  onError: () => toast.error('Failed to reset the password'),
+                })
+              }}
+            >
+              Reset password
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <TemporaryPasswordDialog value={tempPassword} onClose={() => setTempPassword(null)} />
     </div>
   )
 }

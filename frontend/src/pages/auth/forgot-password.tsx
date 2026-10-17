@@ -100,7 +100,7 @@ export function ForgotPasswordPage() {
                   'Send reset instructions'
                 )}
               </Button>
-              <Button variant="ghost" className="w-full" onClick={() => navigate('/login')}>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/login')}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to sign in
               </Button>

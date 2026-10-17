@@ -90,7 +90,6 @@ export function ApplicationList() {
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application ID</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Member</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied Before</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Loan Type</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Duration</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
@@ -128,7 +127,6 @@ export function ApplicationList() {
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3">{app.loan_type_name}</td>
                       <td className="px-4 py-3 font-medium">{formatCurrency(app.requested_amount)}</td>
                       <td className="px-4 py-3">{app.duration_months} months</td>
                       <td className="px-4 py-3"><StatusBadge status={app.status} /></td>

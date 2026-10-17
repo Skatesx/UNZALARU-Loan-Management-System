@@ -138,6 +138,21 @@ There is no direct link to the payroll system: UNZALARU exchanges files with
 payroll, as a separate loans board would. Manual repayments remain for
 exceptions (e.g. early settlement) and default to Salary Deduction.
 
+### Staff accounts and passwords
+
+- **System → Staff Accounts** (admins only): add admins or supervisors (a
+  temporary password is generated and shown once), change roles, deactivate or
+  reactivate accounts, and reset passwords. An admin can't change their own
+  role or deactivate themselves, and there is always at least one active admin.
+- **Forgot password** emails a one-time reset link (valid for a limited time)
+  that opens `/reset-password`. Without a mail server the email is printed in
+  the backend's terminal window; set `EMAIL_BACKEND`, `EMAIL_HOST`, etc. in
+  `.env` to send real email, and `FRONTEND_URL` if the frontend isn't at
+  `http://localhost:5173`.
+- Admins can also **Reset password** for a member (member page) or staff
+  member, which shows a temporary password to hand over.
+- Everyone can **Change password** from the account menu (top right).
+
 ### Repayment modes
 
 Every repayment records a payment mode: `CASH`, `BANK_TRANSFER`, `MOBILE_MONEY`,
@@ -162,5 +177,8 @@ has been removed from all APIs and UI in line with the updated requirements.
 - `GET /api/reports/membership/?status=&school=&department=`, `.../membership/export/{csv|pdf}/`
 - `GET /api/payroll/deductions/?month=YYYY-MM`, `.../export/{csv|pdf|template}/?month=`
 - `POST /api/payroll/deductions/match/` (multipart `month`, `file`), `POST /api/payroll/deductions/confirm/`
+- `GET/POST /api/auth/staff/`, `PATCH /api/auth/staff/{id}/` — staff accounts (admin)
+- `POST /api/auth/users/{id}/reset-password/` — admin sets a temporary password
+- `POST /api/auth/password-reset/` (email), `POST /api/auth/password-reset/confirm/` (`uid`, `token`, `new_password`)
 
 Full schema: `http://localhost:8000/api/docs/` (Swagger) or `/api/redoc/`.

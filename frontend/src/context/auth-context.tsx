@@ -48,7 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const buildUserFromToken = (payload: TokenPayload): User => ({
-    id: payload.user_id,
+    // SimpleJWT puts user_id in the token as a string; the API uses numbers
+    id: Number(payload.user_id),
     email: payload.email,
     username: payload.email.split('@')[0],
     first_name: payload.first_name,

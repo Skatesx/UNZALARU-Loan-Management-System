@@ -79,11 +79,18 @@ class AdminDashboardChartsView(APIView):
 
         elif chart_type == 'outstanding-amounts':
             from loans.models import Loan
-            data = Loan.objects.filter(status='ACTIVE').values('loan_type__name').annotate(
-                total=Sum('outstanding_balance'),
-                count=Count('id')
+            # UNZALARU has one loan product, so break the balance down by school
+            data = (
+                Loan.objects.filter(status='ACTIVE')
+                .values('member__school')
+                .annotate(total=Sum('outstanding_balance'), count=Count('id'))
+                .order_by('-total')
             )
-            return Response(list(data))
+            return Response([
+                {'school': row['member__school'] or 'Not set',
+                 'total': row['total'], 'count': row['count']}
+                for row in data
+            ])
 
         return Response({'error': 'Unknown chart type'}, status=400)
 
