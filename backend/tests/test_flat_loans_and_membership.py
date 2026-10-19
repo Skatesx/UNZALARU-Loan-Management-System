@@ -193,3 +193,73 @@ class TestMembershipReport:
     def test_members_cannot_view(self, auth_client_member, member):
         response = auth_client_member.get('/api/reports/membership/')
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestLoanTypes:
+    """Admins can add loan types; members choose one when several are on offer."""
+
+    payload = {
+        'name': 'Emergency Loan',
+        'description': 'Quick help for urgent needs',
+        'allowed_amounts': [5000, 2000, 5000],
+        'interest_rate': '5',
+        'max_duration_months': 6,
+        'is_active': True,
+    }
+
+    def test_admin_adds_loan_type(self, auth_client_admin):
+        response = auth_client_admin.post('/api/loan-types/', self.payload, format='json')
+        assert response.status_code == status.HTTP_201_CREATED, response.json()
+        new = LoanType.objects.get(name='Emergency Loan')
+        assert new.allowed_amounts == [2000, 5000]  # sorted, duplicates removed
+        assert new.min_amount == 2000 and new.max_amount == 5000
+        assert new.interest_method == 'FLAT_ONCE' and new.min_duration_months == 1
+
+    @pytest.mark.parametrize('field, value', [
+        ('allowed_amounts', []),
+        ('allowed_amounts', [0, 1000]),
+        ('interest_rate', '150'),
+        ('max_duration_months', 0),
+    ])
+    def test_invalid_loan_type_rejected(self, auth_client_admin, field, value):
+        response = auth_client_admin.post(
+            '/api/loan-types/', {**self.payload, field: value}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert field in response.json()
+
+    def test_duplicate_name_rejected(self, auth_client_admin, flat_loan):
+        response = auth_client_admin.post(
+            '/api/loan-types/', {**self.payload, 'name': 'flat loan'}, format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_loan_types_cannot_be_deleted(self, auth_client_admin, flat_loan):
+        assert auth_client_admin.delete(f'/api/loan-types/{flat_loan.id}/').status_code == 405
+        assert auth_client_admin.delete(f'/api/admin/config/loan-types/{flat_loan.id}/').status_code == 405
+        assert LoanType.objects.filter(pk=flat_loan.pk).exists()
+
+    def test_members_cannot_add_types(self, auth_client_member, member):
+        response = auth_client_member.post('/api/loan-types/', self.payload, format='json')
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_member_must_choose_when_several_types(
+        self, auth_client_admin, auth_client_member, member, flat_loan, eligibility_rules
+    ):
+        auth_client_admin.post('/api/loan-types/', self.payload, format='json')
+        application = {'requested_amount': 10000, 'duration_months': 6, 'purpose': 'School fees for the term'}
+        response = auth_client_member.post('/api/loan-applications/', application, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()['error'] == 'Choose a loan type'
+
+        emergency = LoanType.objects.get(name='Emergency Loan')
+        response = auth_client_member.post('/api/loan-applications/', {
+            **application, 'loan_type': emergency.id, 'requested_amount': 2000,
+        }, format='json')
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_switched_off_type_hidden_from_members(self, auth_client_admin, auth_client_member, member, flat_loan):
+        auth_client_admin.patch(f'/api/loan-types/{flat_loan.id}/', {'is_active': False}, format='json')
+        names = [t['name'] for t in auth_client_member.get('/api/loan-types/').json()['results']]
+        assert 'Flat Loan' not in names

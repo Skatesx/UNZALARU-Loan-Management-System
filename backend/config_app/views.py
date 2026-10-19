@@ -21,6 +21,8 @@ class LoanTypeConfigViewSet(viewsets.ModelViewSet):
     serializer_class = LoanTypeSerializer
     search_fields = ['name']
     filterset_fields = ['is_active']
+    # Existing loans refer to their type, so types are switched off, not deleted
+    http_method_names = ['get', 'post', 'put', 'patch', 'head', 'options']
 
 
 class EligibilityRuleConfigViewSet(viewsets.ModelViewSet):

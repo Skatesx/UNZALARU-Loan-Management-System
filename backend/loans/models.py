@@ -47,11 +47,6 @@ class LoanType(models.Model):
     def __str__(self):
         return f'{self.name} ({self.interest_rate}% {self.get_interest_method_display()})'
 
-    @classmethod
-    def current(cls):
-        """The loan product members apply for (UNZALARU offers a single flat loan)."""
-        return cls.objects.filter(is_active=True).order_by('id').first()
-
 
 class LoanApplication(models.Model):
     """Loan application submitted by a member."""

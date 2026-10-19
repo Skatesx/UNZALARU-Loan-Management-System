@@ -45,7 +45,7 @@ export function useUpdateLoanType() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<LoanType> }) => {
-      const response = await apiClient.put(`/loan-types/${id}/`, data)
+      const response = await apiClient.patch(`/loan-types/${id}/`, data)
       return response.data
     },
     onSuccess: () => {

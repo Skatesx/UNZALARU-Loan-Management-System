@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -29,10 +29,23 @@ export function ApplyLoan() {
   const navigate = useNavigate()
   const { data: loanTypes, isLoading: loadingTypes } = useLoanTypes()
   const createApplication = useCreateLoanApplication()
+  // Steps: 0 = choose a loan type (only when several are active), 1 = details, 2 = review
   const [step, setStep] = useState(1)
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null)
 
-  // Members only see active loan products; UNZALARU has a single flat loan
-  const product: LoanType | undefined = Array.isArray(loanTypes) ? loanTypes[0] : undefined
+  // Members only see active loan types; with just one, they aren't asked to choose
+  const types: LoanType[] = Array.isArray(loanTypes) ? loanTypes : []
+  const chooseType = types.length > 1
+  const product: LoanType | undefined = chooseType
+    ? types.find((t) => t.id === selectedTypeId)
+    : types[0]
+  const stage = chooseType && (step === 0 || !product) ? 0 : step
+
+  // Start on the choose-a-type step once we know there is a choice to make
+  useEffect(() => {
+    if (chooseType && selectedTypeId === null) setStep(0)
+  }, [chooseType, selectedTypeId])
+  const stageNumbers = chooseType ? [0, 1, 2] : [1, 2]
   const amounts = product?.allowed_amounts?.length
     ? product.allowed_amounts.map(Number)
     : []
@@ -78,6 +91,15 @@ export function ApplyLoan() {
     setStep(1)
   }
 
+  const pickType = (t: LoanType) => {
+    if (t.id !== selectedTypeId) {
+      // Amounts and periods differ between types, so start those again
+      setValue('requested_amount', 0)
+      setValue('duration_months', 0)
+    }
+    setSelectedTypeId(t.id)
+  }
+
   const goToReview = () => {
     let valid = true
     if (!amount) {
@@ -120,7 +142,7 @@ export function ApplyLoan() {
 
   if (loadingTypes) return <LoadingSkeleton type="form" />
 
-  if (!product) {
+  if (types.length === 0) {
     return (
       <EmptyState
         title="Loans are not available right now"
@@ -134,28 +156,73 @@ export function ApplyLoan() {
       <div>
       <PageHeader
         title="Apply for Loan"
-        description={`${product.name}: ${Number(product.interest_rate)}% interest${
-          product.interest_method === 'FLAT_ONCE' ? ', charged once' : ''
-        }`}
+        description={
+          product && stage > 0
+            ? `${product.name}: ${Number(product.interest_rate)}% interest${
+                product.interest_method === 'FLAT_ONCE' ? ', charged once' : ''
+              }`
+            : 'Choose the loan that suits you'
+        }
       />
 
       {/* Step indicator */}
       <div className="flex items-center justify-center mb-8">
-        {[1, 2].map((s) => (
+        {stageNumbers.map((s, i) => (
           <div key={s} className="flex items-center">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-              step >= s ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
+              stage >= s ? 'bg-emerald-600 text-white' : 'bg-muted text-muted-foreground'
             }`}>
-              {step > s ? <CheckCircle className="w-4 h-4" /> : s}
+              {stage > s ? <CheckCircle className="w-4 h-4" /> : i + 1}
             </div>
-            {s < 2 && <div className={`w-16 h-0.5 ${step > s ? 'bg-emerald-600' : 'bg-muted'}`} />}
+            {i < stageNumbers.length - 1 && <div className={`w-16 h-0.5 ${stage > s ? 'bg-emerald-600' : 'bg-muted'}`} />}
           </div>
         ))}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
+        {/* Step 0: choose a loan type (only when several are active) */}
+        {stage === 0 && (
+          <div className="max-w-2xl mx-auto space-y-4">
+            <h2 className="text-lg font-medium text-center mb-6">Choose a loan type</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" role="radiogroup" aria-label="Loan type">
+              {types.map((t) => {
+                const list = (t.allowed_amounts || []).map(Number)
+                const selected = t.id === selectedTypeId
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => pickType(t)}
+                    className={`text-left rounded-xl border p-5 transition-all ${
+                      selected
+                        ? 'border-emerald-500 ring-2 ring-emerald-500 bg-emerald-50 dark:bg-emerald-950/20'
+                        : 'hover:border-input bg-card'
+                    }`}
+                  >
+                    <p className="font-semibold">{t.name}</p>
+                    {t.description && <p className="text-sm text-muted-foreground mt-1">{t.description}</p>}
+                    <p className="text-sm mt-3">
+                      <span className="font-medium">
+                        {list.length
+                          ? list.map((a) => formatCurrency(a)).join(' / ')
+                          : `${formatCurrency(Number(t.min_amount))} to ${formatCurrency(Number(t.max_amount))}`}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {Number(t.interest_rate)}% interest{t.interest_method === 'FLAT_ONCE' ? ' charged once' : ''},
+                      repaid over 1 to {t.max_duration_months} months
+                    </p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Loan details */}
-        {step === 1 && (
+        {stage === 1 && product && (
           <div className="max-w-lg mx-auto space-y-5">
             <h2 className="text-lg font-medium text-center mb-6">Loan Details</h2>
 
@@ -241,7 +308,7 @@ export function ApplyLoan() {
         )}
 
         {/* Step 2: Review & Submit */}
-        {step === 2 && (
+        {stage === 2 && product && (
           <div className="max-w-lg mx-auto space-y-4">
             <h2 className="text-lg font-medium text-center mb-6">Review & Submit</h2>
             <Card>
@@ -281,14 +348,22 @@ export function ApplyLoan() {
 
         {/* Navigation */}
         <div className="flex justify-center gap-3 mt-8">
-          {step > 1 && (
-            <Button type="button" variant="outline" onClick={() => setStep(1)}>
+          {(stage === 2 || (stage === 1 && chooseType)) && (
+            <Button type="button" variant="outline" onClick={() => setStep(stage - 1)}>
               <ArrowLeft className="w-4 h-4 mr-2" /> Previous
             </Button>
           )}
           {/* Distinct keys stop React reusing the Next button as the Submit
               button, which would turn the click on Next into a form submit */}
-          {step === 1 ? (
+          {stage === 0 ? (
+            <Button
+              key="choose"
+              type="button"
+              onClick={() => (product ? setStep(1) : toast.error('Choose a loan type'))}
+            >
+              Next <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : stage === 1 ? (
             <Button key="next" type="button" onClick={goToReview}>
               Next <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
