@@ -49,3 +49,27 @@ class TestDefaulterDetection:
 
         # Today - should be 0
         assert service.calculate_days_overdue(date.today()) == 0
+
+
+@pytest.mark.django_db
+class TestDailyRefresh:
+    """Overdue statuses refresh by themselves once per day."""
+
+    def test_runs_once_per_day(self, monkeypatch):
+        from defaulters.services import DefaulterDetectionService
+
+        calls = []
+        monkeypatch.setattr(DefaulterDetectionService, 'update_statuses', lambda self: calls.append(1))
+        service = DefaulterDetectionService()
+        assert service.refresh_daily() is True
+        assert service.refresh_daily() is False
+        assert len(calls) == 1
+
+    def test_dashboard_triggers_refresh(self, auth_client_admin, monkeypatch):
+        from defaulters.services import DefaulterDetectionService
+
+        calls = []
+        monkeypatch.setattr(DefaulterDetectionService, 'update_statuses', lambda self: calls.append(1))
+        auth_client_admin.get('/api/dashboard/admin/summary/')
+        auth_client_admin.get('/api/defaulters/')
+        assert len(calls) == 1  # first visit of the day only

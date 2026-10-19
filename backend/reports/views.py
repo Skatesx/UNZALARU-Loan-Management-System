@@ -23,6 +23,8 @@ class AdminDashboardSummaryView(APIView):
     permission_classes = [IsStaffUser]
 
     def get(self, request):
+        from defaulters.services import DefaulterDetectionService
+        DefaulterDetectionService().refresh_daily()  # overdue days grow daily
         data = DashboardService.get_admin_summary()
         return Response(data)
 
@@ -101,6 +103,8 @@ class MemberDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        from defaulters.services import DefaulterDetectionService
+        DefaulterDetectionService().refresh_daily()  # overdue days grow daily
         try:
             member = Member.objects.get(user=request.user)
         except Member.DoesNotExist:
@@ -206,6 +210,9 @@ class DefaulterReportView(APIView):
 
     def get(self, request):
         from defaulters.models import DefaulterStatus
+        from defaulters.services import DefaulterDetectionService
+
+        DefaulterDetectionService().refresh_daily()  # overdue days grow daily
 
         queryset = DefaulterStatus.objects.select_related(
             'member', 'member__user', 'loan'

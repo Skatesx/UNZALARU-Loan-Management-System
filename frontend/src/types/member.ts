@@ -59,6 +59,8 @@ export interface MemberCreateRequest {
 export interface MemberSignupRequest {
   /** MAN number */
   member_id: string
+  /** Agreed to the privacy notice */
+  consent: boolean
   email: string
   first_name: string
   last_name: string

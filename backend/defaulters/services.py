@@ -15,6 +15,32 @@ class DefaulterDetectionService:
         'SEVERE_DEFAULTER': (61, float('inf')),
     }
 
+    LAST_RUN_KEY = 'defaulter_statuses_checked_on'
+
+    def refresh_daily(self):
+        """Re-check every active loan's overdue days once per calendar day.
+
+        Days overdue grow every day even when nothing else happens, so the
+        dashboards, defaulter lists and approval checks call this; only the
+        first call each day does the work. (In production the
+        update_defaulter_statuses command can also be scheduled daily.)
+        Returns True if a check ran.
+        """
+        from config_app.models import SystemConfig
+
+        today = date.today().isoformat()
+        if SystemConfig.get_value(self.LAST_RUN_KEY) == today:
+            return False
+        self.update_statuses()
+        SystemConfig.objects.update_or_create(
+            key=self.LAST_RUN_KEY,
+            defaults={
+                'value': today,
+                'description': 'Date overdue/defaulter statuses were last refreshed automatically',
+            },
+        )
+        return True
+
     def update_statuses(self):
         """
         Update defaulter statuses for all active loans.

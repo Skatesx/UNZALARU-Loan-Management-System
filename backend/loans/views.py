@@ -34,10 +34,17 @@ class LoanTypeViewSet(viewsets.ModelViewSet):
         return [IsAdminUser()]
 
     def get_queryset(self):
-        queryset = LoanType.objects.all()
+        queryset = LoanType.objects.order_by('-is_active', 'name')
         if self.request.user.is_authenticated and not IsStaffUser().has_permission(self.request, self):
             queryset = queryset.filter(is_active=True)
         return queryset
+
+    def destroy(self, request, *args, **kwargs):
+        # Existing loans refer to their type, so types are switched off instead
+        return Response(
+            {'error': 'Loan types cannot be deleted; switch the type off instead'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
 
 class LoanApplicationViewSet(viewsets.ModelViewSet):
@@ -110,9 +117,15 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         with the message as a plain string.
         """
         member = Member.objects.get(user=self.request.user)
-        loan_type = serializer.validated_data.get('loan_type') or LoanType.current()
+        loan_type = serializer.validated_data.get('loan_type')
         if loan_type is None:
-            raise ValueError('No loan product is currently available')
+            # Members may leave the type out when only one is on offer
+            active = list(LoanType.objects.filter(is_active=True)[:2])
+            if not active:
+                raise ValueError('No loan type is currently available')
+            if len(active) > 1:
+                raise ValueError('Choose a loan type')
+            loan_type = active[0]
 
         service = LoanApplicationService()
         application = service.create_application(

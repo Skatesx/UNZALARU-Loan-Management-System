@@ -63,12 +63,12 @@ class MemberSerializer(serializers.ModelSerializer):
             'id', 'member_id', 'user', 'nrc_number', 'phone_number',
             'address', 'department', 'school', 'employment_status',
             'membership_status', 'approved_by', 'approval_date',
-            'account_status', 'application_count',
+            'account_status', 'application_count', 'data_consent_at',
             'full_name', 'email', 'created_at', 'updated_at',
         ]
         read_only_fields = [
             'id', 'member_id', 'approved_by', 'approval_date',
-            'created_at', 'updated_at',
+            'data_consent_at', 'created_at', 'updated_at',
         ]
 
 
@@ -143,18 +143,27 @@ class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
     first_name = serializers.CharField(max_length=150, source='user_first_name')
     last_name = serializers.CharField(max_length=150, source='user_last_name')
     password = serializers.CharField(write_only=True, min_length=8)
+    # The member must agree to the privacy notice (how their data is used)
+    consent = serializers.BooleanField(write_only=True)
 
     class Meta:
         model = Member
         fields = [
             'member_id', 'email', 'first_name', 'last_name', 'password',
             'nrc_number', 'phone_number', 'address', 'school', 'department',
-            'employment_status',
+            'employment_status', 'consent',
         ]
         extra_kwargs = {'school': {'required': True, 'allow_blank': False}}
 
     def validate_member_id(self, value):
         return validate_man_number(value)
+
+    def validate_consent(self, value):
+        if value is not True:
+            raise serializers.ValidationError(
+                'You must agree to the privacy notice to register'
+            )
+        return value
 
     def validate_email(self, value):
         from users.models import User
@@ -172,8 +181,12 @@ class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        from django.utils import timezone
+
         from users.models import User
 
+        validated_data.pop('consent')
+        validated_data['data_consent_at'] = timezone.now()
         user_email = validated_data.pop('user_email')
         user_first_name = validated_data.pop('user_first_name')
         user_last_name = validated_data.pop('user_last_name')

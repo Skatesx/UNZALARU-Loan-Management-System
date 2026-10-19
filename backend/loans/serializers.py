@@ -6,7 +6,11 @@ from .models import Loan, LoanApplication, LoanType
 
 
 class LoanTypeSerializer(serializers.ModelSerializer):
-    """Serializer for LoanType model."""
+    """Serializer for LoanType model.
+
+    Loan types are fixed-amount loans: the admin lists the amounts members
+    may borrow, and min_amount/max_amount are worked out from that list.
+    """
 
     class Meta:
         model = LoanType
@@ -16,7 +20,53 @@ class LoanTypeSerializer(serializers.ModelSerializer):
             'interest_method', 'allow_multiple_active', 'allowed_amounts', 'is_active',
             'created_at', 'updated_at',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'min_amount', 'max_amount', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'description': {'required': False, 'allow_blank': True},
+            'interest_method': {'required': False},
+            'min_duration_months': {'required': False},
+        }
+
+    def validate_name(self, value):
+        value = ' '.join(value.split())
+        others = LoanType.objects.filter(name__iexact=value)
+        if self.instance:
+            others = others.exclude(pk=self.instance.pk)
+        if others.exists():
+            raise serializers.ValidationError('A loan type with this name already exists')
+        return value
+
+    def validate_allowed_amounts(self, value):
+        from decimal import Decimal, InvalidOperation
+
+        try:
+            amounts = sorted({Decimal(str(a)) for a in value})
+        except (InvalidOperation, TypeError):
+            raise serializers.ValidationError('Amounts must be numbers')
+        if not amounts or any(a <= 0 for a in amounts):
+            raise serializers.ValidationError('List at least one amount greater than zero')
+        return [int(a) if a == a.to_integral_value() else float(a) for a in amounts]
+
+    def validate_interest_rate(self, value):
+        if value < 0 or value > 100:
+            raise serializers.ValidationError('Interest rate must be between 0 and 100%')
+        return value
+
+    def validate_max_duration_months(self, value):
+        if value < 1 or value > 60:
+            raise serializers.ValidationError('The longest repayment period must be 1 to 60 months')
+        return value
+
+    def validate(self, attrs):
+        amounts = attrs.get('allowed_amounts', getattr(self.instance, 'allowed_amounts', None))
+        if not amounts:
+            raise serializers.ValidationError({'allowed_amounts': 'List the amounts members may borrow'})
+        attrs['min_amount'] = min(amounts)
+        attrs['max_amount'] = max(amounts)
+        attrs.setdefault('min_duration_months', getattr(self.instance, 'min_duration_months', 1) or 1)
+        if not self.instance:
+            attrs.setdefault('interest_method', 'FLAT_ONCE')
+        return attrs
 
 
 class EligibilityScoreInlineSerializer(serializers.Serializer):

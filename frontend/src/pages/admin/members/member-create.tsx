@@ -118,6 +118,7 @@ export function MemberCreate() {
                   <Label>Employment Status *</Label>
                   <Select
                     value={employmentStatus}
+                    items={{ PERMANENT: 'Permanent', CONTRACT: 'Contract', PART_TIME: 'Part Time', RETIRED: 'Retired' }}
                     onValueChange={(val) => setValue('employment_status', val as 'PERMANENT' | 'CONTRACT' | 'PART_TIME' | 'RETIRED')}
                   >
                     <SelectTrigger>

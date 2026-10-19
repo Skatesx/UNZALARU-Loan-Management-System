@@ -66,6 +66,10 @@ def evaluate(application):
     from defaulters.models import DefaulterStatus
     from loans.models import Loan
 
+    # Overdue days grow daily; make sure the defaulter checks below are current
+    from defaulters.services import DefaulterDetectionService
+    DefaulterDetectionService().refresh_daily()
+
     member = application.member
     loan_type = application.loan_type
     criteria = get_criteria()

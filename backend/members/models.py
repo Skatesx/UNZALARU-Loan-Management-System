@@ -62,6 +62,10 @@ class Member(models.Model):
     account_status = models.CharField(
         max_length=20, choices=ACCOUNT_STATUS_CHOICES, default='ACTIVE'
     )
+    data_consent_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When the member agreed to the privacy notice at signup',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

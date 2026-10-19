@@ -12,7 +12,7 @@ Django + DRF backend (`backend/`) and React + TypeScript + Vite frontend (`front
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -e .          # or: pip install django djangorestframework djangorestframework-simplejwt drf-spectacular django-filter django-cors-headers "psycopg[binary]" python-decouple reportlab faker pytest pytest-django
-cp .env.example .env                # then edit DATABASE_URL / SECRET_KEY
+cp .env.example .env                # then edit DATABASE_URL and set a long random SECRET_KEY
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py load_seed_data   # demo data + default config
 .venv/bin/python manage.py runserver
@@ -62,14 +62,22 @@ cd frontend && npm run build                          # typecheck + build
 
 Income is not collected or verified anywhere in the system.
 
-### The flat loan
+### Loan types (the flat loan by default)
 
-UNZALARU members qualify by membership, so there is a single loan product, the
-**Flat Loan**: members borrow **K10,000, K15,000 or K20,000** at **10% interest
-charged once** (K10,000 → repay K11,000), repaid over **1-12 months** of their
-choice. Admins can change the amounts, rate and longest repayment period under
-**Configuration → Loan Settings**. The old loan types are kept, inactive, so
-existing loans keep their history.
+UNZALARU members qualify by membership. By default there is one active loan
+type, the **Flat Loan**: members borrow **K10,000, K15,000 or K20,000** at
+**10% interest charged once** (K10,000 -> repay K11,000), repaid over
+**1-12 months** of their choice.
+
+Admins manage loan types under **Configuration -> Loan Settings**: **Add loan
+type**, edit a type's name, description, fixed amounts, interest rate (charged
+once) and longest repayment period, and switch types on or off. Types are
+switched off rather than deleted, because existing loans refer to them.
+
+- With **one** active type, members are not asked to choose; Apply for Loan
+  goes straight to the amount and period.
+- With **several** active types, members first choose a loan type, then an
+  amount and period from that type.
 
 ### Loan approval criteria (configurable)
 
@@ -152,6 +160,28 @@ exceptions (e.g. early settlement) and default to Salary Deduction.
 - Admins can also **Reset password** for a member (member page) or staff
   member, which shows a temporary password to hand over.
 - Everyone can **Change password** from the account menu (top right).
+
+### Privacy notice and consent
+
+Signup shows a short privacy notice (what data is collected, why, who can see
+it, what is shared with payroll, how it is protected) with a link to the full
+notice. Members must tick the consent box to register; the backend rejects a
+signup without consent and records when the member agreed (`data_consent_at`).
+
+### Automatic defaulter detection
+
+Days overdue grow every day, so overdue and defaulter statuses (At Risk 1-30
+days, Defaulter 31-60, Severe Defaulter 61+) refresh automatically **once a
+day**, the first time the admin dashboard, the Defaulters page or report, a
+member dashboard or an approval checklist is opened. Recording repayments and
+confirming payroll deductions also refresh them.
+
+On a server, schedule the same check to run every morning, e.g. with Windows
+Task Scheduler (daily trigger) running, from the `backend` folder:
+
+```bash
+.venv\Scripts\python.exe manage.py update_defaulter_statuses
+```
 
 ### Repayment modes
 

@@ -21,6 +21,8 @@ export const signupSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirm_password: z.string().min(1, 'Please confirm your password'),
+  // Agreement to the privacy notice (how member data is used)
+  consent: z.boolean().refine((v) => v === true, 'You must agree to the privacy notice to register'),
   nrc_number: z.string().min(1, 'NRC number is required'),
   phone_number: z.string().min(1, 'Phone number is required'),
   address: z.string().min(1, 'Address is required'),
