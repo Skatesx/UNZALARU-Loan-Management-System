@@ -31,6 +31,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
+            'consent': True,
             'member_id': '200001',
         }, content_type='application/json')
 
@@ -57,6 +58,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
+            'consent': True,
             'member_id': '200002',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -75,6 +77,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
+            'consent': True,
             'member_id': '200003',
         }, content_type='application/json')
         # Second signup with same NRC
@@ -89,6 +92,7 @@ class TestMemberSignup:
             'school': 'School of Natural Sciences',
             'department': 'Chemistry',
             'employment_status': 'PERMANENT',
+            'consent': True,
             'member_id': '200004',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -226,6 +230,7 @@ class TestManNumbers:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
+            'consent': True,
         }, content_type='application/json')
 
     def test_man_number_required(self, api_client):
@@ -240,6 +245,7 @@ class TestManNumbers:
             'school': 'School of Natural Sciences',
             'department': 'Physics',
             'employment_status': 'PERMANENT',
+            'consent': True,
         }, content_type='application/json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'member_id' in response.data
@@ -263,3 +269,32 @@ class TestManNumbers:
         response = self._signup(api_client, 'spaces@test.com', 'NRC-SPACES', ' 123456 ')
         assert response.status_code == status.HTTP_201_CREATED
         assert Member.objects.get(user__email='spaces@test.com').member_id == '123456'
+
+
+@pytest.mark.django_db
+class TestPrivacyConsent:
+    """Members must agree to the privacy notice when they register."""
+
+    def _payload(self, **extra):
+        return {
+            'member_id': '300001', 'email': 'consent@test.com',
+            'first_name': 'Con', 'last_name': 'Sent', 'password': 'securepass123',
+            'nrc_number': 'NRC-CONSENT', 'phone_number': '+260700000000',
+            'address': 'A', 'school': 'School of Natural Sciences',
+            'department': 'Physics', 'employment_status': 'PERMANENT', **extra,
+        }
+
+    @pytest.mark.parametrize('consent', [None, False])
+    def test_signup_without_consent_rejected(self, api_client, consent):
+        payload = self._payload() if consent is None else self._payload(consent=consent)
+        response = api_client.post('/api/members/signup/', payload, content_type='application/json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert 'consent' in response.data
+        assert not Member.objects.filter(member_id='300001').exists()
+
+    def test_consent_time_is_recorded(self, api_client):
+        response = api_client.post(
+            '/api/members/signup/', self._payload(consent=True), content_type='application/json'
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Member.objects.get(member_id='300001').data_consent_at is not None

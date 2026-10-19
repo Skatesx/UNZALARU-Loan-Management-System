@@ -40,6 +40,10 @@ class DefaulterViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['member__member_id', 'member__user__first_name', 'member__user__last_name']
     ordering_fields = ['days_overdue', 'classification', 'last_checked']
 
+    def list(self, request, *args, **kwargs):
+        DefaulterDetectionService().refresh_daily()  # overdue days grow daily
+        return super().list(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = DefaulterStatus.objects.select_related(
             'member', 'member__user', 'loan', 'schedule'

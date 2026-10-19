@@ -77,6 +77,7 @@ SIGNUP = {
     'password': 'securepass123', 'nrc_number': 'NRC-SCHOOL',
     'phone_number': '+260700000000', 'address': 'A',
     'department': 'Computing and Informatics', 'employment_status': 'PERMANENT',
+    'consent': True,
 }
 
 

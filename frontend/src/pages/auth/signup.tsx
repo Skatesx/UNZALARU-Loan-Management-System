@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authApi } from '@/api/auth'
 import { signupSchema, type SignupFormData } from '@/lib/validators'
 import { AuthStoryPanel, AuthBrandRow } from '@/components/auth/story-panel'
+import { PrivacyNoticeDialog } from '@/components/auth/privacy-notice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -42,7 +43,7 @@ const EMPLOYMENT_OPTIONS = [
 const STEP_FIELDS: Array<Array<keyof SignupFormData>> = [
   ['first_name', 'last_name', 'email'],
   ['member_id', 'nrc_number', 'phone_number', 'school', 'department', 'employment_status', 'address'],
-  ['password', 'confirm_password'],
+  ['password', 'confirm_password', 'consent'],
 ]
 
 const STEPS = [
@@ -94,6 +95,7 @@ export function SignupPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [showPassword, setShowPassword] = useState(false)
+  const [privacyOpen, setPrivacyOpen] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
@@ -110,6 +112,7 @@ export function SignupPage() {
     mode: 'onTouched',
     defaultValues: {
       employment_status: 'PERMANENT',
+      consent: false,
     },
   })
 
@@ -158,6 +161,7 @@ export function SignupPage() {
         school: data.school,
         department: data.department,
         employment_status: data.employment_status,
+        consent: data.consent,
       })
       setSuccessMessage(
         response.message ||
@@ -209,6 +213,7 @@ export function SignupPage() {
   return (
     <div className="min-h-screen flex bg-background">
       <AuthStoryPanel headline="Your financial well-being is our priority." />
+      <PrivacyNoticeDialog open={privacyOpen} onOpenChange={setPrivacyOpen} />
 
       <main className="relative flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-10 overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -318,6 +323,7 @@ export function SignupPage() {
                         <Label>Employment status</Label>
                         <Select
                           value={employmentStatus}
+                          items={EMPLOYMENT_OPTIONS}
                           onValueChange={(value) =>
                             setValue('employment_status', value as SignupFormData['employment_status'], {
                               shouldValidate: true,
@@ -396,6 +402,33 @@ export function SignupPage() {
                         <p className="text-sm text-destructive">{errors.confirm_password.message}</p>
                       )}
                     </div>
+
+                    <div className="rounded-lg border bg-muted/40 p-3 space-y-2">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        UNZALARU uses your details to assess your loan applications, arrange salary
+                        deductions with UNZA payroll and track repayments. Only UNZALARU staff can see
+                        them; payroll receives only your MAN number, name and deduction amount.{' '}
+                        <button
+                          type="button"
+                          className="text-primary underline underline-offset-2"
+                          onClick={() => setPrivacyOpen(true)}
+                        >
+                          Read the full privacy notice
+                        </button>
+                      </p>
+                      <label htmlFor="consent" className="flex items-start gap-2.5 text-sm cursor-pointer">
+                        <input
+                          id="consent"
+                          type="checkbox"
+                          className="mt-0.5 h-4 w-4 accent-emerald-600"
+                          {...register('consent')}
+                        />
+                        <span>I agree to UNZALARU using my details as described in the privacy notice.</span>
+                      </label>
+                      {errors.consent && (
+                        <p className="text-sm text-destructive">{errors.consent.message}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -413,12 +446,14 @@ export function SignupPage() {
                   ) : (
                     <span />
                   )}
+                  {/* Distinct keys stop React reusing Continue as the submit
+                      button, which would turn the click on Continue into a submit */}
                   {step < STEPS.length - 1 ? (
-                    <Button type="button" className="h-10" onClick={goNext}>
+                    <Button key="continue" type="button" className="h-10" onClick={goNext}>
                       Continue <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   ) : (
-                    <Button type="submit" className="h-10" disabled={isSubmitting}>
+                    <Button key="submit" type="submit" className="h-10" disabled={isSubmitting}>
                       {isSubmitting ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
