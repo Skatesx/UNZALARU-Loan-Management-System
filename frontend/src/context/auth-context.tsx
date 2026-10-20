@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import type { User, UserRole } from '@/types/auth'
 import { authApi } from '@/api/auth'
 import {
@@ -38,6 +39,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  // Cached server data belongs to whoever was signed in: an admin's lists
+  // (all loan types, all members) must not be shown to the next user
+  const queryClient = useQueryClient()
 
   const decodeToken = (token: string): TokenPayload | null => {
     try {
@@ -82,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await authApi.login({ email, password })
+    queryClient.clear()
     setTokens(response.access, response.refresh)
 
     const payload = decodeToken(response.access)
@@ -90,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(nextUser)
     }
     return nextUser as User
-  }, [])
+  }, [queryClient])
 
   const logout = useCallback(async () => {
     const refresh = getRefreshToken()
@@ -102,8 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     clearTokens()
+    queryClient.clear()
     setUser(null)
-  }, [])
+  }, [queryClient])
 
   const value: AuthContextType = {
     user,
