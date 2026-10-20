@@ -6,6 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 
+// What each factor's band values count (they are not money)
+const FACTOR_UNITS: Record<string, string> = {
+  APPLICATION_HISTORY: 'earlier applications',
+  EMPLOYMENT: 'employment rating',
+  OBLIGATIONS: 'other loans',
+  REPAYMENT_HISTORY: '% of due installments paid',
+}
+
+function bandLabel(min: number, max: number | null | undefined) {
+  if (max === null || max === undefined) return `${min} or more`
+  if (min === max) return `${min}`
+  return `${min}–${max}`
+}
+
 export function EligibilityRuleConfig() {
   const { data: rules, isLoading, error, refetch } = useEligibilityRules()
   const updateRule = useUpdateEligibilityRule()
@@ -36,11 +50,13 @@ export function EligibilityRuleConfig() {
               </div>
               <Progress value={Number(rule.weight)} className="h-2" />
               <div>
-                <p className="text-xs text-muted-foreground/70 mb-2">Thresholds</p>
+                <p className="text-xs text-muted-foreground/70 mb-2">
+                  Thresholds{FACTOR_UNITS[rule.factor] ? ` (${FACTOR_UNITS[rule.factor]})` : ''}
+                </p>
                 <div className="space-y-1">
                   {rule.thresholds?.map((t: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between text-xs bg-muted/50 px-3 py-1.5 rounded">
-                      <span>K{t.min?.toLocaleString()} — {t.max ? `K${t.max.toLocaleString()}` : '∞'}</span>
+                      <span>{bandLabel(t.min, t.max)}</span>
                       <span className="font-medium">Score: {t.score}</span>
                     </div>
                   ))}
