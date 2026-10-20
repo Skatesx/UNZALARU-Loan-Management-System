@@ -2,6 +2,10 @@ from decimal import Decimal
 
 from .models import EligibilityRule, EligibilityScore
 
+# Repayment-history value for members with no installments due yet: the middle
+# of the 0-100 range, so first-time borrowers get a neutral score
+NEUTRAL_REPAYMENT_PERCENT = 60
+
 
 class EligibilityScoringService:
     """Single service class that orchestrates all factor scoring."""
@@ -25,7 +29,7 @@ class EligibilityScoringService:
             score = self._score_factor(rule, application)
             weighted = Decimal(str(score)) * (rule.weight / Decimal('100'))
             breakdown[rule.factor] = float(weighted)
-            reasons.extend(self._generate_reasons(rule, score))
+            reasons.extend(self._generate_reasons(rule, score, application))
 
         total = sum(breakdown.values())
         total = round(total, 2)
@@ -64,7 +68,12 @@ class EligibilityScoringService:
         return 0
 
     def _get_factor_value(self, factor, application):
-        """Extract the raw value for a factor from the application."""
+        """Extract the raw value for a factor from the application.
+
+        Each rule's thresholds are written against these raw values: a count
+        of earlier applications, an employment rating (0-100), a count of
+        existing obligations, and the percentage of due installments paid.
+        """
         if factor == 'APPLICATION_HISTORY':
             # Earlier applications by the member; 0 = first-time applicant,
             # who gets priority (scored highest by the default thresholds).
@@ -72,9 +81,9 @@ class EligibilityScoringService:
         elif factor == 'EMPLOYMENT':
             return self._employment_score(application.member)
         elif factor == 'OBLIGATIONS':
-            return self._obligations_score(application)
+            return len(application.existing_loan_obligations or [])
         elif factor == 'REPAYMENT_HISTORY':
-            return self._repayment_history_score(application.member)
+            return self._repayment_history_percent(application.member)
         return 0
 
     def _employment_score(self, member):
@@ -87,54 +96,30 @@ class EligibilityScoringService:
         }
         return employment_scores.get(member.employment_status, 0)
 
-    def _obligations_score(self, application):
-        """Score based on existing loan obligations. Higher = fewer obligations = better."""
-        obligations = application.existing_loan_obligations or []
-        num_obligations = len(obligations)
+    def _due_installments(self, member):
+        from django.utils import timezone
 
-        # More obligations = lower score
-        if num_obligations == 0:
-            return 100
-        elif num_obligations == 1:
-            return 70
-        elif num_obligations == 2:
-            return 40
-        else:
-            return 10
+        from repayments.models import RepaymentSchedule
 
-    def _repayment_history_score(self, member):
+        return RepaymentSchedule.objects.filter(
+            loan__member=member, due_date__lte=timezone.localdate()
+        )
+
+    def _repayment_history_percent(self, member):
+        """Percentage (0-100) of the member's due installments that are paid.
+
+        Members with nothing due yet (first-time borrowers) get a neutral
+        value in the middle of the range, so they are neither rewarded nor
+        penalised.
         """
-        Score based on repayment history.
-        First-time borrowers get neutral score (50).
-        """
-        from loans.models import Loan
+        due = self._due_installments(member)
+        total = due.count()
+        if total == 0:
+            return NEUTRAL_REPAYMENT_PERCENT
+        paid = due.filter(payment_status='PAID').count()
+        return paid * 100 // total
 
-        loans = Loan.objects.filter(member=member)
-
-        if not loans.exists():
-            # First-time borrower — neutral score
-            return 50
-
-        total_paid = sum(loan.amount_repaid for loan in loans)
-        total_expected = sum(loan.total_repayment for loan in loans)
-
-        if total_expected == 0:
-            return 50
-
-        payment_ratio = float(total_paid / total_expected)
-
-        if payment_ratio >= 0.9:
-            return 100
-        elif payment_ratio >= 0.7:
-            return 75
-        elif payment_ratio >= 0.5:
-            return 50
-        elif payment_ratio >= 0.3:
-            return 25
-        else:
-            return 10
-
-    def _generate_reasons(self, rule, score):
+    def _generate_reasons(self, rule, score, application):
         """Generate human-readable reasons based on score."""
         reasons = []
 
@@ -163,10 +148,12 @@ class EligibilityScoringService:
                 reasons.append('✗ Multiple existing obligations')
 
         elif rule.factor == 'REPAYMENT_HISTORY':
-            if score >= 80:
-                reasons.append('✓ Good repayment history')
-            elif score == 50:
+            if not self._due_installments(application.member).exists():
                 reasons.append('~ First-time borrower (neutral score)')
+            elif score >= 80:
+                reasons.append('✓ Good repayment history')
+            elif score >= 50:
+                reasons.append('~ Fair repayment history')
             elif score >= 30:
                 reasons.append('✗ Poor repayment history')
             else:
