@@ -47,7 +47,7 @@ def member(member_user):
     return Member.objects.create(
         user=member_user,
         member_id='100001',
-        nrc_number='NRC-123456',
+        nrc_number='100001/11/1',
         phone_number='+260700000000',
         address='123 Test Road, Lusaka',
         department='Computing and Informatics',
@@ -62,7 +62,7 @@ def pending_member(pending_member_user):
     return Member.objects.create(
         user=pending_member_user,
         member_id='100002',
-        nrc_number='NRC-PENDING1',
+        nrc_number='100002/12/1',
         phone_number='+260700000001',
         address='456 Test Road, Lusaka',
         department='Mathematics',

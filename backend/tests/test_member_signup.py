@@ -25,7 +25,7 @@ class TestMemberSignup:
             'first_name': 'New',
             'last_name': 'Member',
             'password': 'securepass123',
-            'nrc_number': 'NRC-NEW-001',
+            'nrc_number': '100005/15/1',
             'phone_number': '+260700123456',
             'address': '789 New Road, Lusaka',
             'school': 'School of Natural Sciences',
@@ -52,7 +52,7 @@ class TestMemberSignup:
             'first_name': 'X',
             'last_name': 'Y',
             'password': 'securepass123',
-            'nrc_number': 'NRC-DUP-1',
+            'nrc_number': '100006/16/1',
             'phone_number': '+260700000000',
             'address': 'A',
             'school': 'School of Natural Sciences',
@@ -71,7 +71,7 @@ class TestMemberSignup:
             'first_name': 'First',
             'last_name': 'User',
             'password': 'securepass123',
-            'nrc_number': 'NRC-SAME-123',
+            'nrc_number': '100007/17/1',
             'phone_number': '+260700111111',
             'address': 'A',
             'school': 'School of Natural Sciences',
@@ -86,7 +86,7 @@ class TestMemberSignup:
             'first_name': 'Second',
             'last_name': 'User',
             'password': 'securepass123',
-            'nrc_number': 'NRC-SAME-123',
+            'nrc_number': '100007/17/1',
             'phone_number': '+260700222222',
             'address': 'C',
             'school': 'School of Natural Sciences',
@@ -129,7 +129,7 @@ class TestPendingMemberRestrictions:
         )
         Member.objects.create(
             user=user,
-            nrc_number='NRC-CANLOGIN',
+            nrc_number='100008/18/1',
             phone_number='+260700999999',
             address='1 Test St',
             department='Law',
@@ -239,7 +239,7 @@ class TestManNumbers:
             'first_name': 'No',
             'last_name': 'Man',
             'password': 'securepass123',
-            'nrc_number': 'NRC-NOMAN',
+            'nrc_number': '100009/19/1',
             'phone_number': '+260700555555',
             'address': 'A',
             'school': 'School of Natural Sciences',
@@ -251,22 +251,22 @@ class TestManNumbers:
         assert 'member_id' in response.data
 
     def test_duplicate_man_number_rejected(self, api_client, member):
-        response = self._signup(api_client, 'dupman@test.com', 'NRC-DUPMAN', member.member_id)
+        response = self._signup(api_client, 'dupman@test.com', '100010/20/1', member.member_id)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'member_id' in response.data
 
     def test_invalid_man_number_rejected(self, api_client):
-        response = self._signup(api_client, 'badman@test.com', 'NRC-BADMAN', 'a b!')
+        response = self._signup(api_client, 'badman@test.com', '100011/21/1', 'a b!')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @pytest.mark.parametrize('man', ['12345', '1234567', '12345A', 'MBR-1234', '12 3456'])
     def test_man_number_must_be_six_digits(self, api_client, man):
-        response = self._signup(api_client, 'six@test.com', 'NRC-SIX', man)
+        response = self._signup(api_client, 'six@test.com', '100012/22/1', man)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert 'exactly 6 digits' in str(response.data['member_id'])
 
     def test_surrounding_spaces_are_ignored(self, api_client):
-        response = self._signup(api_client, 'spaces@test.com', 'NRC-SPACES', ' 123456 ')
+        response = self._signup(api_client, 'spaces@test.com', '100013/23/1', ' 123456 ')
         assert response.status_code == status.HTTP_201_CREATED
         assert Member.objects.get(user__email='spaces@test.com').member_id == '123456'
 
@@ -279,7 +279,7 @@ class TestPrivacyConsent:
         return {
             'member_id': '300001', 'email': 'consent@test.com',
             'first_name': 'Con', 'last_name': 'Sent', 'password': 'securepass123',
-            'nrc_number': 'NRC-CONSENT', 'phone_number': '+260700000000',
+            'nrc_number': '100014/24/1', 'phone_number': '+260700000000',
             'address': 'A', 'school': 'School of Natural Sciences',
             'department': 'Physics', 'employment_status': 'PERMANENT', **extra,
         }

@@ -74,7 +74,7 @@ class TestFlatLoan:
 
 SIGNUP = {
     'email': 'school@test.com', 'first_name': 'S', 'last_name': 'F',
-    'password': 'securepass123', 'nrc_number': 'NRC-SCHOOL',
+    'password': 'securepass123', 'nrc_number': '100003/13/1',
     'phone_number': '+260700000000', 'address': 'A',
     'department': 'Computing and Informatics', 'employment_status': 'PERMANENT',
     'consent': True,

@@ -285,7 +285,7 @@ class Command(BaseCommand):
                 user=user,
                 defaults={
                     'member_id': str(102300 + i * 70),  # demo MAN number
-                    'nrc_number': f'NRC-{random.randint(100000, 999999)}',
+                    'nrc_number': f'{random.randint(100000, 999999)}/{random.randint(10, 99)}/1',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} University Road, Lusaka',
                     'school': departments[i % len(departments)][0],
@@ -326,7 +326,7 @@ class Command(BaseCommand):
                 user=user,
                 defaults={
                     'member_id': str(301010 + idx),  # demo MAN number
-                    'nrc_number': f'NRC-P{100000 + idx}',
+                    'nrc_number': f'{300000 + idx}/{20 + idx:02d}/1',
                     'phone_number': f'+260{random.randint(700000000, 799999999)}',
                     'address': f'{random.randint(1, 100)} Great East Road, Lusaka',
                     'school': school,

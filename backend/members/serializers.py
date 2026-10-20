@@ -3,11 +3,76 @@ import re
 from rest_framework import serializers
 
 from users.serializers import UserSerializer
+from users.validators import validate_person_name
 
 from .models import Member
 
 # UNZA MAN (staff) numbers are exactly six digits
 MAN_NUMBER_PATTERN = re.compile(r'^\d{6}$')
+# Zambian National Registration Card number: 123456/78/1
+NRC_PATTERN = re.compile(r'^\d{6}/\d{2}/\d$')
+# Zambian phone number after removing spaces: 0971234567 or +260971234567
+PHONE_PATTERN = re.compile(r'^(?:\+260|0)(\d{9})$')
+
+
+def validate_nrc(value):
+    value = ''.join((value or '').split())
+    if not NRC_PATTERN.match(value):
+        raise serializers.ValidationError(
+            'Enter the NRC number as on the card, e.g. 123456/78/1'
+        )
+    return value
+
+
+def validate_phone(value):
+    """Accept 0971234567 or +260 97 123 4567 and store +260971234567."""
+    compact = re.sub(r'[\s\-()]', '', value or '')
+    match = PHONE_PATTERN.match(compact)
+    if not match:
+        raise serializers.ValidationError(
+            'Enter a Zambian phone number, e.g. 0971234567 or +260971234567'
+        )
+    return '+260' + match.group(1)
+
+
+class ContactFieldsMixin:
+    """Shared format checks for NRC and phone numbers.
+
+    Values that are not being changed are left alone, so records created
+    before these checks existed can still be edited.
+    """
+
+    def _unchanged(self, field, value):
+        instance = getattr(self, 'instance', None)
+        return instance is not None and getattr(instance, field) == value
+
+    def validate_nrc_number(self, value):
+        if self._unchanged('nrc_number', value):
+            return value
+        value = validate_nrc(value)
+        others = Member.objects.filter(nrc_number__iexact=value)
+        if getattr(self, 'instance', None) is not None:
+            others = others.exclude(pk=self.instance.pk)
+        if others.exists():
+            raise serializers.ValidationError(
+                'A member with this NRC number already exists'
+            )
+        return value
+
+    def validate_phone_number(self, value):
+        if self._unchanged('phone_number', value):
+            return value
+        return validate_phone(value)
+
+
+class PersonNameMixin:
+    """First and last names: letters, spaces, hyphens and apostrophes only."""
+
+    def validate_first_name(self, value):
+        return validate_person_name(value)
+
+    def validate_last_name(self, value):
+        return validate_person_name(value)
 
 
 def validate_man_number(value):
@@ -31,6 +96,8 @@ def tidy_group_name(field, value):
     value = ' '.join((value or '').split())
     if not value:
         raise serializers.ValidationError('This field may not be blank.')
+    if any(ch.isdigit() for ch in value) or not any(ch.isalpha() for ch in value):
+        raise serializers.ValidationError('Use the name in words, without numbers')
     existing = (
         Member.objects.filter(**{f'{field}__iexact': value})
         .values_list(field, flat=True)
@@ -88,7 +155,8 @@ class MemberListSerializer(serializers.ModelSerializer):
         ]
 
 
-class MemberCreateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
+class MemberCreateSerializer(PersonNameMixin, ContactFieldsMixin, GroupFieldsMixin,
+                             serializers.ModelSerializer):
     """Serializer for creating members with user account."""
 
     member_id = serializers.CharField(max_length=20)
@@ -132,7 +200,8 @@ class MemberCreateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
         return member
 
 
-class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
+class MemberSelfSignupSerializer(PersonNameMixin, ContactFieldsMixin, GroupFieldsMixin,
+                                 serializers.ModelSerializer):
     """Serializer for public member self-registration.
 
     Creates a MEMBER user and a PENDING member profile awaiting admin approval.
@@ -173,13 +242,6 @@ class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
             )
         return value
 
-    def validate_nrc_number(self, value):
-        if Member.objects.filter(nrc_number__iexact=value).exists():
-            raise serializers.ValidationError(
-                'A member with this NRC number already exists'
-            )
-        return value
-
     def create(self, validated_data):
         from django.utils import timezone
 
@@ -202,7 +264,7 @@ class MemberSelfSignupSerializer(GroupFieldsMixin, serializers.ModelSerializer):
         return Member.objects.create(user=user, **validated_data)
 
 
-class MemberUpdateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
+class MemberUpdateSerializer(ContactFieldsMixin, GroupFieldsMixin, serializers.ModelSerializer):
     """Serializer for updating member profile."""
 
     class Meta:
@@ -213,7 +275,7 @@ class MemberUpdateSerializer(GroupFieldsMixin, serializers.ModelSerializer):
         ]
 
 
-class MemberSelfUpdateSerializer(serializers.ModelSerializer):
+class MemberSelfUpdateSerializer(ContactFieldsMixin, serializers.ModelSerializer):
     """Serializer for members updating their own contact details."""
 
     class Meta:

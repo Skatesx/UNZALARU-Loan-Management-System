@@ -26,7 +26,7 @@ class TestMemberCRUD:
             'first_name': 'New',
             'last_name': 'Member',
             'password': 'testpass123',
-            'nrc_number': 'NRC-999999',
+            'nrc_number': '100004/14/1',
             'phone_number': '+260700000001',
             'address': '456 Test Road',
             'school': 'School of Natural Sciences',
@@ -35,7 +35,7 @@ class TestMemberCRUD:
             'member_id': '456780',
         }, content_type='application/json')
         assert response.status_code == status.HTTP_201_CREATED
-        assert Member.objects.get(nrc_number='NRC-999999').member_id == '456780'
+        assert Member.objects.get(nrc_number='100004/14/1').member_id == '456780'
 
     def test_member_list_shows_application_count(
         self, auth_client_admin, member, loan_type

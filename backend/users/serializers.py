@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import User
+from .validators import validate_person_name
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -132,6 +133,12 @@ class StaffCreateSerializer(serializers.ModelSerializer):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError('An account with this email already exists')
         return value
+
+    def validate_first_name(self, value):
+        return validate_person_name(value)
+
+    def validate_last_name(self, value):
+        return validate_person_name(value)
 
 
 class StaffUpdateSerializer(serializers.ModelSerializer):

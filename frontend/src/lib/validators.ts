@@ -7,6 +7,32 @@ const manNumber = z
   .min(1, 'MAN number is required')
   .regex(/^\d{6}$/, 'A MAN number is exactly 6 digits')
 
+// Same format rules as the backend (members/serializers.py, users/validators.py)
+const personName = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required`)
+    .regex(/^\p{L}+(?:[ '-]\p{L}+)*$/u, "Use letters only; spaces, hyphens (-) and apostrophes (') are allowed")
+
+const nrcNumber = z
+  .string()
+  .trim()
+  .min(1, 'NRC number is required')
+  .regex(/^\d{6}\/\d{2}\/\d$/, 'Enter the NRC number as on the card, e.g. 123456/78/1')
+
+const phoneNumber = z
+  .string()
+  .min(1, 'Phone number is required')
+  .refine((v) => /^(?:\+260|0)\d{9}$/.test(v.replace(/[\s\-()]/g, '')), 'Enter a Zambian phone number, e.g. 0971234567 or +260971234567')
+
+const groupName = (label: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, `${label} is required`)
+    .refine((v) => !/\d/.test(v) && /\p{L}/u.test(v), 'Use the name in words, without numbers')
+
 export const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(1, 'Password is required'),
@@ -16,18 +42,18 @@ export type LoginFormData = z.infer<typeof loginSchema>
 
 export const signupSchema = z.object({
   member_id: manNumber,
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
+  first_name: personName('First name'),
+  last_name: personName('Last name'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   confirm_password: z.string().min(1, 'Please confirm your password'),
   // Agreement to the privacy notice (how member data is used)
   consent: z.boolean().refine((v) => v === true, 'You must agree to the privacy notice to register'),
-  nrc_number: z.string().min(1, 'NRC number is required'),
-  phone_number: z.string().min(1, 'Phone number is required'),
+  nrc_number: nrcNumber,
+  phone_number: phoneNumber,
   address: z.string().min(1, 'Address is required'),
-  school: z.string().trim().min(1, 'School / faculty is required'),
-  department: z.string().min(1, 'Department is required'),
+  school: groupName('School / faculty'),
+  department: groupName('Department'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
@@ -53,14 +79,14 @@ export const memberCreateSchema = z.object({
   member_id: manNumber,
   email: z.string().email('Please enter a valid email address'),
   username: z.string().min(3, 'Username must be at least 3 characters'),
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
+  first_name: personName('First name'),
+  last_name: personName('Last name'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  nrc_number: z.string().min(1, 'NRC number is required'),
-  phone_number: z.string().min(1, 'Phone number is required'),
+  nrc_number: nrcNumber,
+  phone_number: phoneNumber,
   address: z.string().min(1, 'Address is required'),
-  school: z.string().trim().min(1, 'School / faculty is required'),
-  department: z.string().min(1, 'Department is required'),
+  school: groupName('School / faculty'),
+  department: groupName('Department'),
   employment_status: z.enum(['PERMANENT', 'CONTRACT', 'PART_TIME', 'RETIRED'], {
     errorMap: () => ({ message: 'Please select an employment status' }),
   }),
